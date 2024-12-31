@@ -43,7 +43,6 @@ public class BackblingManager {
         // Create the display entity
         ItemDisplay backbling = player.getWorld().spawn(player.getLocation(), ItemDisplay.class, (display) -> {
             display.setItemStack(backblingItem);
-            display.setGravity(false);
             display.setCustomName("Backbling:" + player.getUniqueId());
             display.setCustomNameVisible(false);
 
