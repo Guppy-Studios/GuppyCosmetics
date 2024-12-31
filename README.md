@@ -2,17 +2,17 @@
 
 GuppyCosmetics is a Minecraft plugin that allows players to equip customizable cosmetic items, including hats and backblings. Players can easily equip these items by right-clicking on them, and server administrators can spawn cosmetic items using simple commands.
 
-## To-Do List
-
-- [ ] **Improve Documentation**: Add detailed explanations for how to customize items in the configuration files.
-- [ ] **Permissions System**: Integrate a permissions system to restrict certain cosmetics to specific players or ranks, as well as permissions for commands.
-
 ## Features
 
 - **Custom Hats**: Players can equip hats from a configurable list of items.
 - **Backblings**: Players can equip backbling items as a chestplate item, with configurable offsets for positioning.
 - **Command Support**: Players with appropriate permissions can use commands to spawn cosmetic items for themselves or other players, and reload configuration files.
 - **Messages**: Fully customizable messages for equipping items and reloading configurations.
+
+## To-Do List
+
+- [ ] **Improve Documentation**: Add detailed explanations for how to customize items in the configuration files.
+- [ ] **Permissions System**: Integrate a permissions system to restrict certain cosmetics to specific players or ranks, as well as permissions for commands.
 
 ## Commands
 
@@ -54,11 +54,3 @@ Under the following conditions:
 For full terms and conditions, see the full license at:  
 [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 
-## Credits
-
-- **Author**: tenshiku
-- **Dependencies**: Spigot API
-
-## Contact
-
-For support or inquiries, please reach out to [tenshiku](https://github.com/tenshiku).
