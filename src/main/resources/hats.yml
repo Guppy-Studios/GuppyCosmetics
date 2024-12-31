@@ -1,0 +1,18 @@
+# Define custom hats here.
+# Each hat should have a unique ID, material, name, lore, and custom_model_data.
+
+hat1: # You can name this whatever you'd like
+  material: LEATHER_HORSE_ARMOR # Material can be set to any material
+  name: "&eExample Hat"
+  lore:
+    - "&7lore line 1"
+    - "&7lore line 2"
+  custom_model_data: 1
+
+hat2:
+  material: LEATHER_HORSE_ARMOR
+  name: "&bExample Hat"
+  lore:
+    - "&7lore line 1"
+    - "&7lore line 2"
+  custom_model_data: 2

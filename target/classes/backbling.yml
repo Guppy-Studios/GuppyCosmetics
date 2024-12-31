@@ -1,0 +1,26 @@
+# Define custom backblings here.
+# Each backbling should have a unique ID, material, name, lore, and custom_model_data.
+
+backbling1: # You can name this whatever you'd like
+  material: LEATHER_HORSE_ARMOR # Material can be set to any material
+  name: "&6Example Backbling"
+  lore:
+    - "&7lore line 1"
+    - "&7lore line 2"
+  custom_model_data: 3
+  position:
+    x: 0.0  # Left/Right offset
+    y: -0.6  # Up/Down offset
+    z: 0  # Forward/Back offset
+
+backbling2:
+  material: LEATHER_HORSE_ARMOR
+  name: "&6Example Backbling"
+  lore:
+    - "&7lore line 1"
+    - "&7lore line 2"
+  custom_model_data: 4
+  position:
+    x: 0.0  # Left/Right offset
+    y: -0.6  # Up/Down offset
+    z: 0  # Forward/Back offset

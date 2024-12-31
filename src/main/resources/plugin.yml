@@ -1,0 +1,10 @@
+name: GuppyCosmetics
+version: '${project.version}'
+main: com.tenshiku.guppycosmetics.GuppyCosmetics
+api-version: '1.21'
+author: tenshiku
+commands:
+  guppycosmetics:
+    description: Main command for GuppyCosmetics plugin.
+    usage: /<command> <spawn|reload>
+    aliases: [gc]

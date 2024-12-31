@@ -1,0 +1,9 @@
+# Customize plugin messages here. Supports color codes (&) and hex codes (&#rrggbb).
+
+prefix: "&8[&6GuppyCosmetics&8] "
+equipped-message: "&aYou equipped the &f{item}&a!"
+reloaded-message: "&aConfiguration files reloaded successfully!"
+no-permission: "&cYou do not have permission to use this command."
+invalid-item-id: "&cItem ID &f{item-id}&c does not exist."
+player-not-found: "&cPlayer &f{player}&c not found."
+item-given: "&aGave &f{item}&a to &f{player}&a!"
