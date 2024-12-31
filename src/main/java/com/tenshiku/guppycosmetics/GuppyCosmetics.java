@@ -7,13 +7,18 @@ public class GuppyCosmetics extends JavaPlugin {
     private ConfigManager configManager;
     private CommandHandler commandHandler;
     private EventListener eventListener;
+    private BackblingManager backblingManager;
 
     @Override
     public void onEnable() {
         configManager = new ConfigManager(this);
         configManager.loadAllConfigs();
 
-        eventListener = new EventListener(this, configManager);
+        // Initialize BackblingManager before EventListener
+        backblingManager = new BackblingManager(this, configManager);
+
+        // Pass backblingManager to EventListener
+        eventListener = new EventListener(this, configManager, backblingManager);
         getServer().getPluginManager().registerEvents(eventListener, this);
 
         commandHandler = new CommandHandler(this, configManager);
@@ -22,6 +27,9 @@ public class GuppyCosmetics extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        // Clean up display entities on shutdown
+        if (backblingManager != null) {
+            backblingManager.shutdown();
+        }
     }
 }
