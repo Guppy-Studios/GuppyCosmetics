@@ -8,6 +8,7 @@ GuppyCosmetics is a Minecraft plugin that allows players to equip customizable c
 - **Backblings**: Players can equip backbling items as a chestplate item, with configurable offsets for positioning.
 - **Command Support**: Players with appropriate permissions can use commands to spawn cosmetic items for themselves or other players, and reload configuration files.
 - **Messages**: Fully customizable messages for equipping items and reloading configurations.
+- **Hex Color Support**: Support for hex colors and Minecraft color codes in item names, lore, and messages.
 
 ## To-Do List
 
