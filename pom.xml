@@ -6,7 +6,7 @@
 
     <groupId>com.tenshiku</groupId>
     <artifactId>GuppyCosmetics</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0-ALPHA</version>
     <packaging>jar</packaging>
 
     <name>GuppyCosmetics</name>

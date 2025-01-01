@@ -1,5 +1,5 @@
 name: GuppyCosmetics
-version: '1.0-SNAPSHOT'
+version: '1.0.0-ALPHA'
 main: com.tenshiku.guppycosmetics.GuppyCosmetics
 api-version: '1.21'
 author: tenshiku
