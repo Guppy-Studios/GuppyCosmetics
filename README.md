@@ -1,6 +1,6 @@
 # GuppyCosmetics
 
-GuppyCosmetics is a Minecraft plugin that allows players to equip customizable cosmetic items, including hats and backblings. Players can easily equip these items by right-clicking on them, and server administrators can spawn cosmetic items using simple commands.
+GuppyCosmetics is a Minecraft plugin that allows players to equip customizable cosmetic items, including hats and backblings. Players can easily equip these items by right-clicking on them.
 
 ## Features
 
