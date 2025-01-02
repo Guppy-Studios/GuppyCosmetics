@@ -8,6 +8,7 @@ backbling1: # You can name this whatever you'd like
     - "&7lore line 1"
     - "&7lore line 2"
   custom_model_data: 3
+  permission: example.permission.node  # Optional permission node
   position:
     x: 0.0  # Left/Right offset
     y: -0.6  # Up/Down offset
@@ -20,7 +21,8 @@ backbling2:
     - "&7lore line 1"
     - "&7lore line 2"
   custom_model_data: 4
+  permission: example.permission.node
   position:
-    x: 0.0  # Left/Right offset
-    y: -0.6  # Up/Down offset
-    z: 0  # Forward/Back offset
+    x: 0.0
+    y: -0.6
+    z: 0

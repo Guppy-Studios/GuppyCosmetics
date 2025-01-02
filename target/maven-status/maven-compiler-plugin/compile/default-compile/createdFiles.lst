@@ -5,3 +5,4 @@ com\tenshiku\guppycosmetics\ItemManager.class
 com\tenshiku\guppycosmetics\BackblingManager.class
 com\tenshiku\guppycosmetics\EventListener.class
 com\tenshiku\guppycosmetics\GuppyCosmetics.class
+com\tenshiku\guppycosmetics\CommandCompleter.class

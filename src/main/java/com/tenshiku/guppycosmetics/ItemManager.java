@@ -1,15 +1,15 @@
 package com.tenshiku.guppycosmetics;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.ChatColor;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.NamespacedKey;
 import org.bukkit.persistence.PersistentDataType;
-
 import java.util.List;
-import java.util.ArrayList;
 
 public class ItemManager {
 
@@ -95,5 +95,30 @@ public class ItemManager {
             return meta.getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
         }
         return null;
+    }
+
+    public static boolean hasPermission(Player player, String itemId, ConfigManager configManager) {
+        FileConfiguration hatsConfig = configManager.getHatsConfig();
+        FileConfiguration backblingConfig = configManager.getBackblingConfig();
+
+        String permission = null;
+
+        // Check hats config
+        if (hatsConfig.contains(itemId)) {
+            permission = hatsConfig.getString(itemId + ".permission");
+            Bukkit.getLogger().info("Checking hat permission for " + itemId + ": " + permission);
+        }
+        // Check backbling config
+        else if (backblingConfig.contains(itemId)) {
+            permission = backblingConfig.getString(itemId + ".permission");
+            Bukkit.getLogger().info("Checking backbling permission for " + itemId + ": " + permission);
+        }
+
+        // If no permission is specified or permission is empty, allow access
+        boolean hasPermission = permission == null || permission.isEmpty() || player.hasPermission(permission);
+        Bukkit.getLogger().info("Player " + player.getName() + " permission check for " + itemId + ": " + hasPermission +
+                " (permission node: " + permission + ")");
+
+        return hasPermission;
     }
 }

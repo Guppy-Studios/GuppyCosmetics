@@ -21,8 +21,11 @@ public class GuppyCosmetics extends JavaPlugin {
         eventListener = new EventListener(this, configManager, backblingManager);
         getServer().getPluginManager().registerEvents(eventListener, this);
 
+        // Register command handler and tab completer
         commandHandler = new CommandHandler(this, configManager);
+        CommandCompleter commandCompleter = new CommandCompleter(configManager);
         getCommand("guppycosmetics").setExecutor(commandHandler);
+        getCommand("guppycosmetics").setTabCompleter(commandCompleter);
     }
 
     @Override

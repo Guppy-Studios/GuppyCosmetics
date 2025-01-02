@@ -8,6 +8,7 @@ hat1: # You can name this whatever you'd like
     - "&7lore line 1"
     - "&7lore line 2"
   custom_model_data: 1
+  permission: example.permission.node  # Optional permission node
 
 hat2:
   material: LEATHER_HORSE_ARMOR
@@ -16,3 +17,4 @@ hat2:
     - "&7lore line 1"
     - "&7lore line 2"
   custom_model_data: 2
+  permission: example.permission.node

@@ -6,5 +6,15 @@ author: tenshiku
 commands:
   guppycosmetics:
     description: Main command for GuppyCosmetics plugin.
-    usage: /<command> <spawn|reload>
+    usage: /<command> <spawn|give|reload>
     aliases: [gc]
+permissions:
+  guppycosmetics.spawn:
+    description: Allows spawning cosmetic items for yourself
+    default: op
+  guppycosmetics.give:
+    description: Allows giving cosmetic items to other players
+    default: op
+  guppycosmetics.reload:
+    description: Allows reloading the plugin configuration
+    default: op
