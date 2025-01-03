@@ -16,13 +16,13 @@ GuppyCosmetics is a Minecraft plugin that allows players to equip customizable c
 
 # Permission System
 
-- [ ] **Core Permission Implementation**: Basic permission system structure
+- [x] **Core Permission Implementation**: Basic permission system structure
 - [x] 🚧 **Command Permissions**: Implement specific nodes
   - [x] `guppycosmetics.spawn`
   - [x] `guppycosmetics.give`
   - [x] `guppycosmetics.reload`
-- [ ] **Config Integration**: Support for custom permission nodes in config files
-- [ ] **Optional Permissions**: System for items without specified permissions
+- [x] **Config Integration**: Support for custom permission nodes in config files
+- [x] **Optional Permissions**: System for items without specified permissions
 
 # Command System
 
@@ -37,8 +37,7 @@ GuppyCosmetics is a Minecraft plugin that allows players to equip customizable c
 
 # Configuration
 
-- [ ] **Permission Support**: Add permission nodes in config files
-- [x] **Backwards Compatibility**: Ensure v1.0.0 configs remain working
+- [x] **Permission Support**: Add permission nodes in config files
 - [x] **Documentation**: Update config examples with new permission syntax
 
 ## Commands
