@@ -1,20 +1,37 @@
 # Define custom hats here.
 # Each hat should have a unique ID, material, name, lore, and custom_model_data.
+# MiniMessage Format Examples:
+# Colors: <red>, <blue>, <green>, <yellow>, etc.
+# Formatting: <bold>, <italic>, <underlined>, <strikethrough>
+# Gradients: <gradient:color1:color2>text</gradient>
+# Hex Colors: <#ff0000>, <#00ff00>, <#0000ff>
+# Hover Text: <hover:show_text:'Hover text here'>Text</hover>
 
-hat1: # You can name this whatever you'd like
-  material: LEATHER_HORSE_ARMOR # Material can be set to any material
-  name: "&eExample Hat"
-  lore:
-    - "&7lore line 1"
-    - "&7lore line 2"
-  custom_model_data: 1
-  permission: example.permission.node  # Optional permission node
-
-hat2:
+example_hat:
   material: LEATHER_HORSE_ARMOR
-  name: "&bExample Hat"
+  name: "<gradient:yellow:gold>Example Hat</gradient>"
   lore:
-    - "&7lore line 1"
-    - "&7lore line 2"
+    - "<gray>A fancy hat with a gradient name"
+    - "<#55FFFF>Custom hex color text"
+    - "<hover:show_text:'<red>Very rare!'>Rarity: <gold>★★★★★</hover>"
+  custom_model_data: 1
+  permission: example.permission.node
+
+flame_crown:
+  material: LEATHER_HORSE_ARMOR
+  name: "<bold><#FF5555>Flame Crown</bold>"
+  lore:
+    - "<gradient:red:orange>A blazing hot crown</gradient>"
+    - "<italic><gray>Forged in dragon's fire"
+    - "<dark_red>♨ <red>Heat Level: <gold>Maximum"
   custom_model_data: 2
   permission: example.permission.node
+
+rainbow_hat:
+  material: LEATHER_HORSE_ARMOR
+  name: "<rainbow>Rainbow Hat"
+  lore:
+    - "<gradient:#8A2BE2:#FF69B4>Magical rainbow powers"
+    - "<light_purple>✦ <italic>Sparkles with energy"
+    - "<aqua>Made with unicorn dust"
+  custom_model_data: 3

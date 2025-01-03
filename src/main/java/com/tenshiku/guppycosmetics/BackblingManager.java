@@ -8,8 +8,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Transformation;
-import org.joml.Vector3f;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;

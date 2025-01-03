@@ -1,9 +1,24 @@
-# Customize plugin messages here. Supports color codes (&) and hex codes (&#rrggbb).
+# Customize plugin messages here. Uses MiniMessage format (https://docs.advntr.dev/minimessage/format.html)
+# Example colors: <red>, <blue>, <green>, <yellow>, <gold>, etc.
+# Example formatting: <bold>, <italic>, <underlined>, <strikethrough>, etc.
+# Example gradients: <gradient:red:blue>text</gradient>
+# Example hex colors: <#ff0000>
 
-prefix: "&8[&6GuppyCosmetics&8] "
-equipped-message: "&aYou equipped the &f{item}&a!"
-reloaded-message: "&aConfiguration files reloaded successfully!"
-no-permission: "&cYou do not have permission to use this command."
-invalid-item-id: "&cItem ID &f{item-id}&c does not exist."
-player-not-found: "&cPlayer &f{player}&c not found."
-item-given: "&aGave &f{item}&a to &f{player}&a!"
+prefix: "<#6e7594>[<#8d9ac6>GuppyCosmetics<#6e7594>] "
+equipped-message: "<gray>You equipped the <#8d9ac6>{item}!"
+reloaded-message: "<green>Configuration files reloaded successfully!"
+no-permission: "<red>You do not have permission to use this command."
+no-permission-item: "<red>You do not have permission to use that <#bac4e8>{item_id}"
+invalid-item-id: "<red>Item ID <#8d9ac6>{item-id} does not exist."
+player-not-found: "<red>Player <#8d9ac6>{player} <red>not found."
+item-given: "<gray>Gave <#8d9ac6>{item} <gray>to <#8d9ac6>{player}!"
+player-only: "<red>This command can only be used by players."
+spawn-usage: "<red>Usage: /guppycosmetics spawn <item-id>"
+give-usage: "<red>Usage: /guppycosmetics give <player> <item-id>"
+target-no-permission: "<red>Target player doesn't have permission to use this cosmetic."
+
+# Help messages
+commands-title: "<#6e7594>GuppyCosmetics Commands:"
+spawn-help: "<#8d9ac6>/guppycosmetics spawn <item-id> <gray>- Spawn a cosmetic item"
+give-help: "<#8d9ac6>/guppycosmetics give <player> <item-id> <gray>- Give a cosmetic to a player"
+reload-help: "<#8d9ac6>/guppycosmetics reload <gray>- Reload configuration files"

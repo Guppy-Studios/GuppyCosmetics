@@ -6,6 +6,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 public class CommandHandler implements CommandExecutor {
     private final GuppyCosmetics plugin;
@@ -14,6 +15,19 @@ public class CommandHandler implements CommandExecutor {
     public CommandHandler(GuppyCosmetics plugin, ConfigManager configManager) {
         this.plugin = plugin;
         this.configManager = configManager;
+    }
+
+    // Helper method to get prefix from config
+    private String getPrefix() {
+        return configManager.getMessagesConfig().getString("prefix", "");
+    }
+
+    // Helper method to get item name
+    private String getItemName(ItemStack item) {
+        if (item != null && item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+            return PlainTextComponentSerializer.plainText().serialize(item.getItemMeta().displayName());
+        }
+        return "Unknown Item";
     }
 
     @Override
@@ -42,27 +56,30 @@ public class CommandHandler implements CommandExecutor {
 
     private void handleReload(CommandSender sender, String[] args) {
         if (!sender.hasPermission("guppycosmetics.reload")) {
-            sender.sendMessage(ChatUtils.colorize(configManager.getMessagesConfig().getString("no-permission")));
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("no-permission")));
             return;
         }
 
         configManager.reloadAllConfigs();
-        sender.sendMessage(ChatUtils.colorize(configManager.getMessagesConfig().getString("reloaded-message")));
+        sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("reloaded-message")));
     }
 
     private void handleSpawn(CommandSender sender, String[] args) {
+        // Check permission
         if (!sender.hasPermission("guppycosmetics.spawn")) {
-            sender.sendMessage(ChatUtils.colorize(configManager.getMessagesConfig().getString("no-permission")));
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("no-permission")));
             return;
         }
 
+        // Ensure sender is a player
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatUtils.colorize("&cThis command can only be used by players."));
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("player-only")));
             return;
         }
 
+        // Check correct command usage
         if (args.length < 2) {
-            sender.sendMessage(ChatUtils.colorize("&cUsage: /guppycosmetics spawn <item-id>"));
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("spawn-usage")));
             return;
         }
 
@@ -70,78 +87,88 @@ public class CommandHandler implements CommandExecutor {
         Player player = (Player) sender;
         ItemStack item = ItemManager.getItemById(itemId, configManager);
 
+        // Check if item exists
         if (item == null) {
-            String message = configManager.getMessagesConfig().getString("invalid-item-id")
+            String message = getPrefix() + configManager.getMessagesConfig().getString("invalid-item-id")
                     .replace("{item-id}", itemId);
-            sender.sendMessage(ChatUtils.colorize(message));
+            sender.sendMessage(ChatUtils.format(message));
             return;
         }
 
         // Check item-specific permission
         if (!ItemManager.hasPermission(player, itemId, configManager)) {
-            sender.sendMessage(ChatUtils.colorize(configManager.getMessagesConfig().getString("no-permission")));
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("no-permission")));
             return;
         }
 
+        // Give item to player
         player.getInventory().addItem(item);
-        String message = configManager.getMessagesConfig().getString("item-given")
-                .replace("{item}", item.getItemMeta().getDisplayName())
+        String message = getPrefix() + configManager.getMessagesConfig().getString("item-given")
+                .replace("{item}", getItemName(item))
                 .replace("{player}", player.getName());
-        sender.sendMessage(ChatUtils.colorize(message));
+        sender.sendMessage(ChatUtils.format(message));
     }
 
     private void handleGive(CommandSender sender, String[] args) {
+        // Check permission
         if (!sender.hasPermission("guppycosmetics.give")) {
-            sender.sendMessage(ChatUtils.colorize(configManager.getMessagesConfig().getString("no-permission")));
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("no-permission")));
             return;
         }
 
+        // Check correct command usage
         if (args.length < 3) {
-            sender.sendMessage(ChatUtils.colorize("&cUsage: /guppycosmetics give <player> <item-id>"));
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("give-usage")));
             return;
         }
 
+        // Check if target player is online
         Player target = Bukkit.getPlayer(args[1]);
         if (target == null) {
-            String message = configManager.getMessagesConfig().getString("player-not-found")
+            String message = getPrefix() + configManager.getMessagesConfig().getString("player-not-found")
                     .replace("{player}", args[1]);
-            sender.sendMessage(ChatUtils.colorize(message));
+            sender.sendMessage(ChatUtils.format(message));
             return;
         }
 
         String itemId = args[2];
         ItemStack item = ItemManager.getItemById(itemId, configManager);
 
+        // Check if item exists
         if (item == null) {
-            String message = configManager.getMessagesConfig().getString("invalid-item-id")
+            String message = getPrefix() + configManager.getMessagesConfig().getString("invalid-item-id")
                     .replace("{item-id}", itemId);
-            sender.sendMessage(ChatUtils.colorize(message));
+            sender.sendMessage(ChatUtils.format(message));
             return;
         }
 
-        // Check item-specific permission for the target player
+        // Check item-specific permission for target player
         if (!ItemManager.hasPermission(target, itemId, configManager)) {
-            sender.sendMessage(ChatUtils.colorize("&cTarget player doesn't have permission to use this cosmetic."));
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("target-no-permission")));
             return;
         }
 
+        // Give item to target player
         target.getInventory().addItem(item);
-        String message = configManager.getMessagesConfig().getString("item-given")
-                .replace("{item}", item.getItemMeta().getDisplayName())
+        String message = getPrefix() + configManager.getMessagesConfig().getString("item-given")
+                .replace("{item}", getItemName(item))
                 .replace("{player}", target.getName());
-        sender.sendMessage(ChatUtils.colorize(message));
+        sender.sendMessage(ChatUtils.format(message));
     }
 
     private void sendUsage(CommandSender sender) {
-        sender.sendMessage(ChatUtils.colorize("&6GuppyCosmetics Commands:"));
+        // Send title
+        sender.sendMessage(ChatUtils.format(configManager.getMessagesConfig().getString("commands-title")));
+
+        // Send available commands based on permissions
         if (sender.hasPermission("guppycosmetics.spawn")) {
-            sender.sendMessage(ChatUtils.colorize("&e/guppycosmetics spawn <item-id> &7- Spawn a cosmetic item"));
+            sender.sendMessage(ChatUtils.format(configManager.getMessagesConfig().getString("spawn-help")));
         }
         if (sender.hasPermission("guppycosmetics.give")) {
-            sender.sendMessage(ChatUtils.colorize("&e/guppycosmetics give <player> <item-id> &7- Give a cosmetic to a player"));
+            sender.sendMessage(ChatUtils.format(configManager.getMessagesConfig().getString("give-help")));
         }
         if (sender.hasPermission("guppycosmetics.reload")) {
-            sender.sendMessage(ChatUtils.colorize("&e/guppycosmetics reload &7- Reload configuration files"));
+            sender.sendMessage(ChatUtils.format(configManager.getMessagesConfig().getString("reload-help")));
         }
     }
 }

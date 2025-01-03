@@ -1,33 +1,21 @@
 package com.tenshiku.guppycosmetics;
 
-import net.md_5.bungee.api.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ChatUtils {
-    private static final Pattern HEX_PATTERN = Pattern.compile("#[a-fA-F0-9]{6}");
+    private static final MiniMessage miniMessage = MiniMessage.miniMessage();
 
-    public static String colorize(String message) {
-        if (message == null) return "";
-
-        Matcher matcher = HEX_PATTERN.matcher(message);
-        StringBuffer buffer = new StringBuffer();
-
-        while (matcher.find()) {
-            String hexCode = matcher.group();
-            matcher.appendReplacement(buffer, ChatColor.of(hexCode).toString());
-        }
-        matcher.appendTail(buffer);
-
-        // Handle standard color codes after hex codes
-        return ChatColor.translateAlternateColorCodes('&', buffer.toString());
+    public static Component format(String message) {
+        if (message == null) return Component.empty();
+        return miniMessage.deserialize(message);
     }
 
-    public static List<String> colorizeList(List<String> messages) {
+    public static List<Component> formatList(List<String> messages) {
         return messages.stream()
-                .map(ChatUtils::colorize)
+                .map(ChatUtils::format)
                 .collect(Collectors.toList());
     }
 }

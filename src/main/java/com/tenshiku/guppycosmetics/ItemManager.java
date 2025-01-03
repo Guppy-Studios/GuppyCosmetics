@@ -1,12 +1,11 @@
 package com.tenshiku.guppycosmetics;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.ItemFlag;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.NamespacedKey;
 import org.bukkit.persistence.PersistentDataType;
 import java.util.List;
@@ -34,22 +33,43 @@ public class ItemManager {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return null;
 
-        // Set the display name
+        // Set the display name using MiniMessage
         String name = config.getString(id + ".name", "");
         if (!name.isEmpty()) {
-            meta.setDisplayName(ChatUtils.colorize(name));
+            meta.displayName(ChatUtils.format(name));
         }
 
-        // Set the lore
+        // Set the lore using MiniMessage
         List<String> lore = config.getStringList(id + ".lore");
         if (!lore.isEmpty()) {
-            meta.setLore(ChatUtils.colorizeList(lore));
+            meta.lore(ChatUtils.formatList(lore));
         }
 
-        // Set custom model data as integer
+        // Set custom model data
         if (config.contains(id + ".custom_model_data")) {
             int modelData = config.getInt(id + ".custom_model_data");
             meta.setCustomModelData(modelData);
+        }
+
+        // Hide all possible item flags
+        meta.addItemFlags(
+                ItemFlag.HIDE_ADDITIONAL_TOOLTIP,
+                ItemFlag.HIDE_ARMOR_TRIM,
+                ItemFlag.HIDE_ATTRIBUTES,
+                ItemFlag.HIDE_DESTROYS,
+                ItemFlag.HIDE_DYE,
+                ItemFlag.HIDE_ENCHANTS,
+                ItemFlag.HIDE_PLACED_ON,
+                ItemFlag.HIDE_STORED_ENCHANTS,
+                ItemFlag.HIDE_UNBREAKABLE
+        );
+
+        // Remove armor attribute for armor items
+        if (material.name().contains("LEATHER") || material.name().endsWith("_HELMET")
+                || material.name().endsWith("_CHESTPLATE") || material.name().endsWith("_LEGGINGS")
+                || material.name().endsWith("_BOOTS") || material.name().endsWith("_HORSE_ARMOR")) {
+            meta.addAttributeModifier(org.bukkit.attribute.Attribute.ARMOR,
+                    new org.bukkit.attribute.AttributeModifier("armor", 0, org.bukkit.attribute.AttributeModifier.Operation.ADD_NUMBER));
         }
 
         // Store the item ID and type in persistent data
@@ -106,19 +126,13 @@ public class ItemManager {
         // Check hats config
         if (hatsConfig.contains(itemId)) {
             permission = hatsConfig.getString(itemId + ".permission");
-            Bukkit.getLogger().info("Checking hat permission for " + itemId + ": " + permission);
         }
         // Check backbling config
         else if (backblingConfig.contains(itemId)) {
             permission = backblingConfig.getString(itemId + ".permission");
-            Bukkit.getLogger().info("Checking backbling permission for " + itemId + ": " + permission);
         }
 
         // If no permission is specified or permission is empty, allow access
-        boolean hasPermission = permission == null || permission.isEmpty() || player.hasPermission(permission);
-        Bukkit.getLogger().info("Player " + player.getName() + " permission check for " + itemId + ": " + hasPermission +
-                " (permission node: " + permission + ")");
-
-        return hasPermission;
+        return permission == null || permission.isEmpty() || player.hasPermission(permission);
     }
 }
