@@ -12,7 +12,7 @@ GuppyCosmetics is a Minecraft plugin that allows players to equip customizable c
 
 ## To-Do List
 
-- [ ] **Improve Documentation**: Add detailed explanations for how to customize items in the configuration files.
+- [x] **Improve Documentation**: Add detailed explanations for how to customize items in the configuration files.
 
 # Permission System
 
