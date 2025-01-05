@@ -17,17 +17,8 @@ public class CommandHandler implements CommandExecutor {
         this.configManager = configManager;
     }
 
-    // Helper method to get prefix from config
     private String getPrefix() {
         return configManager.getMessagesConfig().getString("prefix", "");
-    }
-
-    // Helper method to get item name
-    private String getItemName(ItemStack item) {
-        if (item != null && item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
-            return PlainTextComponentSerializer.plainText().serialize(item.getItemMeta().displayName());
-        }
-        return "Unknown Item";
     }
 
     @Override
@@ -39,13 +30,13 @@ public class CommandHandler implements CommandExecutor {
 
         switch (args[0].toLowerCase()) {
             case "reload":
-                handleReload(sender, args);
-                break;
-            case "spawn":
-                handleSpawn(sender, args);
+                handleReload(sender);
                 break;
             case "give":
                 handleGive(sender, args);
+                break;
+            case "spawn":
+                handleSpawn(sender, args);
                 break;
             default:
                 sendUsage(sender);
@@ -54,7 +45,7 @@ public class CommandHandler implements CommandExecutor {
         return true;
     }
 
-    private void handleReload(CommandSender sender, String[] args) {
+    private void handleReload(CommandSender sender) {
         if (!sender.hasPermission("guppycosmetics.reload")) {
             sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("no-permission")));
             return;
@@ -71,20 +62,28 @@ public class CommandHandler implements CommandExecutor {
             return;
         }
 
+        // Validate args length
+        if (args.length != 3) {
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("spawn-usage")));
+            return;
+        }
+
         // Ensure sender is a player
         if (!(sender instanceof Player)) {
             sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("player-only")));
             return;
         }
 
-        // Check correct command usage
-        if (args.length < 2) {
-            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("spawn-usage")));
+        Player player = (Player) sender;
+        CosmeticType type = CosmeticType.fromString(args[1]);
+        String itemId = args[2];
+
+        // Validate cosmetic type
+        if (type == null) {
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("invalid-type")));
             return;
         }
 
-        String itemId = args[1];
-        Player player = (Player) sender;
         ItemStack item = ItemManager.getItemById(itemId, configManager);
 
         // Check if item exists
@@ -116,13 +115,13 @@ public class CommandHandler implements CommandExecutor {
             return;
         }
 
-        // Check correct command usage
-        if (args.length < 3) {
+        // Validate args length
+        if (args.length != 4) {
             sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("give-usage")));
             return;
         }
 
-        // Check if target player is online
+        // Get target player
         Player target = Bukkit.getPlayer(args[1]);
         if (target == null) {
             String message = getPrefix() + configManager.getMessagesConfig().getString("player-not-found")
@@ -131,7 +130,15 @@ public class CommandHandler implements CommandExecutor {
             return;
         }
 
-        String itemId = args[2];
+        CosmeticType type = CosmeticType.fromString(args[2]);
+        String itemId = args[3];
+
+        // Validate cosmetic type
+        if (type == null) {
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("invalid-type")));
+            return;
+        }
+
         ItemStack item = ItemManager.getItemById(itemId, configManager);
 
         // Check if item exists
@@ -154,6 +161,13 @@ public class CommandHandler implements CommandExecutor {
                 .replace("{item}", getItemName(item))
                 .replace("{player}", target.getName());
         sender.sendMessage(ChatUtils.format(message));
+    }
+
+    private String getItemName(ItemStack item) {
+        if (item != null && item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+            return PlainTextComponentSerializer.plainText().serialize(item.getItemMeta().displayName());
+        }
+        return "Unknown Item";
     }
 
     private void sendUsage(CommandSender sender) {

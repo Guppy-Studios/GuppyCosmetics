@@ -6,21 +6,25 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.event.block.Action;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 public class EventListener implements Listener {
     private final GuppyCosmetics plugin;
     private final ConfigManager configManager;
     private final BackblingManager backblingManager;
+    private final BalloonManager balloonManager;
 
-    public EventListener(GuppyCosmetics plugin, ConfigManager configManager, BackblingManager backblingManager) {
+    public EventListener(GuppyCosmetics plugin, ConfigManager configManager, BackblingManager backblingManager, BalloonManager balloonManager) {
         this.plugin = plugin;
         this.configManager = configManager;
         this.backblingManager = backblingManager;
+        this.balloonManager = balloonManager;
     }
 
     private String getPrefix() {
@@ -36,13 +40,21 @@ public class EventListener implements Listener {
 
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        ItemStack item = player.getInventory().getItemInMainHand();
+        // Only handle right-click actions
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
 
-        if (item.getType() == Material.AIR || !item.hasItemMeta()) return;
+        Player player = event.getPlayer();
+        ItemStack item = event.getItem();
+
+        if (item == null || item.getType() == Material.AIR || !item.hasItemMeta()) return;
 
         String itemId = ItemManager.getItemId(item);
         if (itemId == null) return;
+
+        // Cancel the event for our cosmetic items
+        event.setCancelled(true);
 
         // Check permission before equipping
         if (!ItemManager.hasPermission(player, itemId, configManager)) {
@@ -62,22 +74,82 @@ public class EventListener implements Listener {
             String message = getPrefix() + configManager.getMessagesConfig().getString("equipped-message")
                     .replace("{item}", getItemName(item));
             player.sendMessage(ChatUtils.format(message));
+        } else if (ItemManager.isBalloon(item, configManager)) {
+            // Always create the balloon, the manager will handle switching if one exists
+            balloonManager.createBalloon(player, item);
+            String message = getPrefix() + configManager.getMessagesConfig().getString("equipped-message")
+                    .replace("{item}", getItemName(item));
+            player.sendMessage(ChatUtils.format(message));
         }
     }
 
     @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        // Remove backbling display when player leaves
-        backblingManager.removeBackbling(event.getPlayer().getUniqueId());
+    public void onHandSwap(PlayerSwapHandItemsEvent event) {
+        Player player = event.getPlayer();
+        ItemStack mainHandItem = event.getMainHandItem();  // Item going to main hand
+        ItemStack offHandItem = event.getOffHandItem();    // Item going to off hand
+
+        // If we're swapping a balloon item out of the off-hand
+        if (offHandItem != null && ItemManager.isBalloon(offHandItem, configManager)) {
+            balloonManager.removeBalloon(player.getUniqueId());
+        }
+
+        // If we're swapping a balloon item into the off-hand
+        if (mainHandItem != null && ItemManager.isBalloon(mainHandItem, configManager)) {
+            // Let the swap happen, then create the balloon next tick
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                balloonManager.createBalloon(player, mainHandItem);
+            });
+        }
     }
 
     @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        // Slight delay to ensure player is fully loaded
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            // Check and restore any equipped backbling
-            backblingManager.checkAndRestoreBackbling(event.getPlayer());
-        }, 5L);
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
+
+        // Check cursor item (item being placed)
+        ItemStack cursorItem = event.getCursor();
+        if (cursorItem != null && !cursorItem.getType().isAir()) {
+            String itemId = ItemManager.getItemId(cursorItem);
+            if (itemId != null) {
+                // Check if attempting to equip hat (slot 39), backbling (slot 38), or balloon in leggings (slot 37)
+                if ((ItemManager.isHat(cursorItem, configManager) && event.getRawSlot() == 39) ||
+                        (ItemManager.isBackbling(cursorItem, configManager) && event.getRawSlot() == 38) ||
+                        (ItemManager.isBalloon(cursorItem, configManager) && event.getRawSlot() == 37)) {
+
+                    // Check permission before allowing equip
+                    if (!ItemManager.hasPermission(player, itemId, configManager)) {
+                        event.setCancelled(true);
+                        String message = getPrefix() + configManager.getMessagesConfig().getString("no-permission-item")
+                                .replace("{item_id}", itemId);
+                        player.sendMessage(ChatUtils.format(message));
+                        return;
+                    }
+
+                    // If it's a balloon being equipped to leggings slot
+                    if (ItemManager.isBalloon(cursorItem, configManager) && event.getRawSlot() == 37) {
+                        plugin.getServer().getScheduler().runTask(plugin, () -> {
+                            balloonManager.createBalloon(player, cursorItem);
+                        });
+                    }
+                }
+            }
+        }
+
+        // Handle current slot item (item being taken)
+        ItemStack currentItem = event.getCurrentItem();
+        if (currentItem != null && !currentItem.getType().isAir()) {
+            // If taking a balloon from leggings slot
+            if (event.getRawSlot() == 37 && ItemManager.isBalloon(currentItem, configManager)) {
+                balloonManager.removeBalloon(player.getUniqueId());
+            }
+
+            // Handle backbling removal
+            if (event.getSlotType() == InventoryType.SlotType.ARMOR && ItemManager.isBackbling(currentItem, configManager)) {
+                backblingManager.removeBackbling(player.getUniqueId());
+            }
+        }
     }
 
     private void equipHat(Player player, ItemStack item) {
@@ -108,40 +180,18 @@ public class EventListener implements Listener {
     }
 
     @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) return;
-        Player player = (Player) event.getWhoClicked();
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        backblingManager.removeBackbling(player.getUniqueId());
+        balloonManager.removeBalloon(player.getUniqueId());
+    }
 
-        // Check cursor item (item being placed)
-        ItemStack cursorItem = event.getCursor();
-        if (cursorItem != null && !cursorItem.getType().isAir()) {
-            String itemId = ItemManager.getItemId(cursorItem);
-            if (itemId != null) {
-                // Check if attempting to equip hat (slot 39) or backbling (slot 38)
-                if ((ItemManager.isHat(cursorItem, configManager) && event.getSlotType() == InventoryType.SlotType.ARMOR && event.getRawSlot() == 39) ||
-                        (ItemManager.isBackbling(cursorItem, configManager) && event.getSlotType() == InventoryType.SlotType.ARMOR && event.getRawSlot() == 38)) {
-                    // Check permission before allowing equip
-                    if (!ItemManager.hasPermission(player, itemId, configManager)) {
-                        event.setCancelled(true);
-                        String message = getPrefix() + configManager.getMessagesConfig().getString("no-permission-item")
-                                .replace("{item_id}", itemId);
-                        player.sendMessage(ChatUtils.format(message));
-                        return;
-                    }
-                }
-            }
-        }
-
-        // Handle armor slot clicks for removal
-        if (event.getSlotType() == InventoryType.SlotType.ARMOR) {
-            ItemStack item = event.getCurrentItem();
-            if (item != null && !item.getType().isAir()) {
-                // Check if the clicked item is a backbling
-                if (ItemManager.isBackbling(item, configManager)) {
-                    // Remove the backbling display when unequipping
-                    backblingManager.removeBackbling(player.getUniqueId());
-                }
-            }
-        }
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            Player player = event.getPlayer();
+            backblingManager.checkAndRestoreBackbling(player);
+            balloonManager.checkAndRestoreBalloon(player);
+        }, 5L);
     }
 }

@@ -1,0 +1,26 @@
+# Define custom balloons here.
+# Each balloon should have a unique ID, material, name, lore, and custom_model_data.
+# MiniMessage Format Examples:
+# Colors: <red>, <blue>, <green>, <yellow>, etc.
+# Formatting: <bold>, <italic>, <underlined>, <strikethrough>
+# Gradients: <gradient:color1:color2>text</gradient>
+# Hex Colors: <#ff0000>, <#00ff00>, <#0000ff>
+
+red_balloon:
+  material: LEATHER_HORSE_ARMOR
+  name: "<gradient:#FF0000:#FF6B6B>Red Balloon</gradient>"
+  lore:
+    - "<#FF6B6B>A bright red balloon that floats"
+    - "<italic><gray>Brings joy wherever it goes"
+    - "<hover:show_text:'<red>Party Collection'>🎈 Festive Item</hover>"
+  custom_model_data: 10
+  permission: guppycosmetics.balloon.red
+
+rainbow_balloon:
+  material: LEATHER_HORSE_ARMOR
+  name: "<rainbow>Rainbow Balloon Bundle</rainbow>"
+  lore:
+    - "<gradient:#FF0000:#00FF00:#0000FF>A bundle of colorful balloons</gradient>"
+    - "<italic><gray>Spreads happiness and color"
+    - "<hover:show_text:'<rainbow>Ultra Rare!</rainbow>'>✨ Special Collection</hover>"
+  custom_model_data: 11

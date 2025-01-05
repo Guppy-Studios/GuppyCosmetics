@@ -1,0 +1,27 @@
+# Define general cosmetic items here.
+# Each item should have a unique ID, material, name, lore, and custom_model_data.
+# MiniMessage Format Examples:
+# Colors: <red>, <blue>, <green>, <yellow>, etc.
+# Formatting: <bold>, <italic>, <underlined>, <strikethrough>
+# Gradients: <gradient:color1:color2>text</gradient>
+# Hex Colors: <#ff0000>, <#00ff00>, <#0000ff>
+# Hover Text: <hover:show_text:'Hover text here'>Text</hover>
+
+magic_wand:
+  material: STICK
+  name: "<gradient:#9B59B6:#3498DB>Mystic Wand</gradient>"
+  lore:
+    - "<#9B59B6>A wand imbued with magical energy"
+    - "<italic><gray>Creates sparkles when waved"
+    - "<hover:show_text:'<light_purple>Magical Collection'>✦ Arcane Item</hover>"
+  custom_model_data: 20
+  permission: guppycosmetics.item.wand
+
+pet_rock:
+  material: STONE
+  name: "<gradient:#95A5A6:#7F8C8D>Pet Rock</gradient>"
+  lore:
+    - "<gray>A faithful companion"
+    - "<italic><dark_gray>Very low maintenance"
+    - "<hover:show_text:'<gray>Common Item'>⬤ Basic Collection</hover>"
+  custom_model_data: 21

@@ -19,6 +19,6 @@ target-no-permission: "<red>Target player doesn't have permission to use this co
 
 # Help messages
 commands-title: "<#6e7594>GuppyCosmetics Commands:"
-spawn-help: "<#8d9ac6>/guppycosmetics spawn <item-id> <gray>- Spawn a cosmetic item"
-give-help: "<#8d9ac6>/guppycosmetics give <player> <item-id> <gray>- Give a cosmetic to a player"
+spawn-help: "<#8d9ac6>/guppycosmetics spawn <cosmetic-type> <item-id> <gray>- Spawn a cosmetic item"
+give-help: "<#8d9ac6>/guppycosmetics give <player> <cosmetic-type> <item-id> <gray>- Give a cosmetic to a player"
 reload-help: "<#8d9ac6>/guppycosmetics reload <gray>- Reload configuration files"

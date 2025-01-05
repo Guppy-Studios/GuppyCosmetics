@@ -13,13 +13,14 @@ import java.util.List;
 public class ItemManager {
 
     public static ItemStack getItemById(String id, ConfigManager configManager) {
-        FileConfiguration hatsConfig = configManager.getHatsConfig();
-        FileConfiguration backblingConfig = configManager.getBackblingConfig();
-
-        if (hatsConfig.contains(id)) {
-            return createItem(hatsConfig, id, "hat");
-        } else if (backblingConfig.contains(id)) {
-            return createItem(backblingConfig, id, "backbling");
+        if (configManager.getHatsConfig().contains(id)) {
+            return createItem(configManager.getHatsConfig(), id, "hat");
+        } else if (configManager.getBackblingConfig().contains(id)) {
+            return createItem(configManager.getBackblingConfig(), id, "backbling");
+        } else if (configManager.getBalloonsConfig().contains(id)) {
+            return createItem(configManager.getBalloonsConfig(), id, "balloon");
+        } else if (configManager.getItemsConfig().contains(id)) {
+            return createItem(configManager.getItemsConfig(), id, "item");
         }
         return null;
     }
@@ -106,6 +107,24 @@ public class ItemManager {
                 meta.getPersistentDataContainer().get(typeKey, PersistentDataType.STRING).equals("backbling");
     }
 
+    public static boolean isBalloon(ItemStack item, ConfigManager configManager) {
+        if (item == null || !item.hasItemMeta()) return false;
+        ItemMeta meta = item.getItemMeta();
+
+        NamespacedKey typeKey = new NamespacedKey(GuppyCosmetics.getPlugin(GuppyCosmetics.class), "item_type");
+        return meta.getPersistentDataContainer().has(typeKey, PersistentDataType.STRING) &&
+                meta.getPersistentDataContainer().get(typeKey, PersistentDataType.STRING).equals("balloon");
+    }
+
+    public static boolean isGeneralItem(ItemStack item, ConfigManager configManager) {
+        if (item == null || !item.hasItemMeta()) return false;
+        ItemMeta meta = item.getItemMeta();
+
+        NamespacedKey typeKey = new NamespacedKey(GuppyCosmetics.getPlugin(GuppyCosmetics.class), "item_type");
+        return meta.getPersistentDataContainer().has(typeKey, PersistentDataType.STRING) &&
+                meta.getPersistentDataContainer().get(typeKey, PersistentDataType.STRING).equals("item");
+    }
+
     public static String getItemId(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return null;
         ItemMeta meta = item.getItemMeta();
@@ -118,21 +137,19 @@ public class ItemManager {
     }
 
     public static boolean hasPermission(Player player, String itemId, ConfigManager configManager) {
-        FileConfiguration hatsConfig = configManager.getHatsConfig();
-        FileConfiguration backblingConfig = configManager.getBackblingConfig();
-
         String permission = null;
 
-        // Check hats config
-        if (hatsConfig.contains(itemId)) {
-            permission = hatsConfig.getString(itemId + ".permission");
-        }
-        // Check backbling config
-        else if (backblingConfig.contains(itemId)) {
-            permission = backblingConfig.getString(itemId + ".permission");
+        // Check all config files
+        if (configManager.getHatsConfig().contains(itemId)) {
+            permission = configManager.getHatsConfig().getString(itemId + ".permission");
+        } else if (configManager.getBackblingConfig().contains(itemId)) {
+            permission = configManager.getBackblingConfig().getString(itemId + ".permission");
+        } else if (configManager.getBalloonsConfig().contains(itemId)) {
+            permission = configManager.getBalloonsConfig().getString(itemId + ".permission");
+        } else if (configManager.getItemsConfig().contains(itemId)) {
+            permission = configManager.getItemsConfig().getString(itemId + ".permission");
         }
 
-        // If no permission is specified or permission is empty, allow access
         return permission == null || permission.isEmpty() || player.hasPermission(permission);
     }
 }

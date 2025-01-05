@@ -1,0 +1,49 @@
+# Define custom backblings here.
+# Each backbling should have a unique ID, material, name, lore, and custom_model_data.
+# MiniMessage Format Examples:
+# Colors: <red>, <blue>, <green>, <yellow>, etc.
+# Formatting: <bold>, <italic>, <underlined>, <strikethrough>
+# Gradients: <gradient:color1:color2>text</gradient>
+# Hex Colors: <#ff0000>, <#00ff00>, <#0000ff>
+# Hover Text: <hover:show_text:'Hover text here'>Text</hover>
+
+frost_wings:
+  material: LEATHER_HORSE_ARMOR
+  name: "<gradient:blue:aqua>Frost Wings</gradient>"
+  lore:
+    - "<#00FFFF>Crystalline wings of pure ice"
+    - "<italic><gray>Leaves a trail of snowflakes"
+    - "<hover:show_text:'<aqua>Only found in frozen peaks'>❄ Frozen Rarity</hover>"
+  custom_model_data: 3
+  permission: example.permission.node
+  position:
+    x: 0.0
+    y: -0.6
+    z: 0
+
+royal_shield:
+  material: LEATHER_HORSE_ARMOR
+  name: "<gradient:#FFD700:#FFA500>Royal Shield</gradient>"
+  lore:
+    - "<gradient:gold:yellow>A shield fit for royalty</gradient>"
+    - "<gray>Adorned with precious gems"
+    - "<hover:show_text:'<gold>A royal treasure'>👑 Royal Collection</hover>"
+  custom_model_data: 4
+  permission: example.permission.node
+  position:
+    x: 0.0
+    y: -0.6
+    z: 0
+
+shadow_cloak:
+  material: LEATHER_HORSE_ARMOR
+  name: "<bold><dark_purple>Shadow Cloak</bold>"
+  lore:
+    - "<gradient:#2C3E50:#34495E>Woven from shadow essence"
+    - "<dark_gray>「 <gray><italic>Fades into darkness"
+    - "<light_purple>✧ Mystical Equipment"
+  custom_model_data: 5
+  position:
+    x: 0.0
+    y: -0.6
+    z: 0

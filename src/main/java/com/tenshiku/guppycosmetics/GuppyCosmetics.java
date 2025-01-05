@@ -8,17 +8,19 @@ public class GuppyCosmetics extends JavaPlugin {
     private CommandHandler commandHandler;
     private EventListener eventListener;
     private BackblingManager backblingManager;
+    private BalloonManager balloonManager;
 
     @Override
     public void onEnable() {
         configManager = new ConfigManager(this);
         configManager.loadAllConfigs();
 
-        // Initialize BackblingManager before EventListener
+        // Initialize managers
         backblingManager = new BackblingManager(this, configManager);
+        balloonManager = new BalloonManager(this, configManager);
 
-        // Pass backblingManager to EventListener
-        eventListener = new EventListener(this, configManager, backblingManager);
+        // Pass both managers to EventListener
+        eventListener = new EventListener(this, configManager, backblingManager, balloonManager);
         getServer().getPluginManager().registerEvents(eventListener, this);
 
         // Register command handler and tab completer
@@ -33,6 +35,9 @@ public class GuppyCosmetics extends JavaPlugin {
         // Clean up display entities on shutdown
         if (backblingManager != null) {
             backblingManager.shutdown();
+        }
+        if (balloonManager != null) {
+            balloonManager.shutdown();
         }
     }
 }

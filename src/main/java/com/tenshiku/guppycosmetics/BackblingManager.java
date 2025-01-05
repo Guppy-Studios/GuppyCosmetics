@@ -16,11 +16,13 @@ public class BackblingManager {
     private final Plugin plugin;
     private final ConfigManager configManager;
     private final Map<UUID, ItemDisplay> activeBackblings;
+    private final Map<UUID, Location> lastPlayerLocations;
 
     public BackblingManager(Plugin plugin, ConfigManager configManager) {
         this.plugin = plugin;
         this.configManager = configManager;
         this.activeBackblings = new HashMap<>();
+        this.lastPlayerLocations = new HashMap<>();
 
         // Start the single update task for all backblings
         Bukkit.getScheduler().runTaskTimer(plugin, this::updateAllBackblings, 0L, 1L);
@@ -58,9 +60,12 @@ public class BackblingManager {
 
         // Store in our tracking map
         activeBackblings.put(player.getUniqueId(), backbling);
+        lastPlayerLocations.put(player.getUniqueId(), player.getLocation());
     }
 
     public void removeBackbling(UUID playerId) {
+        lastPlayerLocations.remove(playerId);
+
         ItemDisplay backbling = activeBackblings.remove(playerId);
         if (backbling != null && backbling.isValid()) {
             Player player = Bukkit.getPlayer(playerId);
@@ -68,13 +73,6 @@ public class BackblingManager {
                 player.removePassenger(backbling);
             }
             backbling.remove();
-        }
-    }
-
-    public void checkAndRestoreBackbling(Player player) {
-        ItemStack chestplate = player.getInventory().getChestplate();
-        if (chestplate != null && ItemManager.isBackbling(chestplate, configManager)) {
-            createBackbling(player, chestplate);
         }
     }
 
@@ -89,10 +87,44 @@ public class BackblingManager {
                 return;
             }
 
+            // Validate chestplate
+            ItemStack chestplate = player.getInventory().getChestplate();
+            if (chestplate == null || !ItemManager.isBackbling(chestplate, configManager)) {
+                removeBackbling(playerId);
+                return;
+            }
+
+            // Handle teleports or large movements
+            Location currentLoc = player.getLocation();
+            Location lastLoc = lastPlayerLocations.get(playerId);
+
+            if (lastLoc != null && (currentLoc.getWorld() != lastLoc.getWorld() ||
+                    currentLoc.distanceSquared(lastLoc) > 100)) { // Distance > 10 blocks
+                removeBackbling(playerId);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (player.isOnline()) {
+                        ItemStack newChestplate = player.getInventory().getChestplate();
+                        if (newChestplate != null && ItemManager.isBackbling(newChestplate, configManager)) {
+                            createBackbling(player, newChestplate);
+                        }
+                    }
+                }, 2L);
+                return;
+            }
+
             // Update backbling rotation
-            Location location = player.getLocation();
-            backbling.setRotation(location.getYaw(), 0.0f);
+            backbling.setRotation(currentLoc.getYaw(), 0.0f);
+
+            // Store last location for next update
+            lastPlayerLocations.put(playerId, currentLoc.clone());
         });
+    }
+
+    public void checkAndRestoreBackbling(Player player) {
+        ItemStack chestplate = player.getInventory().getChestplate();
+        if (chestplate != null && ItemManager.isBackbling(chestplate, configManager)) {
+            createBackbling(player, chestplate);
+        }
     }
 
     public void shutdown() {
@@ -100,5 +132,6 @@ public class BackblingManager {
         new HashMap<>(activeBackblings).forEach((playerId, backbling) -> {
             removeBackbling(playerId);
         });
+        lastPlayerLocations.clear();
     }
 }
