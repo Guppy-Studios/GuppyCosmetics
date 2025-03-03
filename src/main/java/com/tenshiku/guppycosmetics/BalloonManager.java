@@ -33,6 +33,7 @@ public class BalloonManager {
     private static final double SWAY_SPEED = 1.5;
     private static final double BOB_AMPLITUDE = 0.15;
     private static final double SWAY_AMPLITUDE = 0.1;
+    private static final double FOLLOW_DISTANCE = 1.0; // Distance behind player
 
     public BalloonManager(Plugin plugin, ConfigManager configManager) {
         this.plugin = plugin;
@@ -46,6 +47,32 @@ public class BalloonManager {
 
         // Start the update task
         Bukkit.getScheduler().runTaskTimer(plugin, this::updateAllBalloons, 0L, 1L);
+
+        // Start the validation task
+        validateAllBalloons();
+    }
+
+    // Run this every few seconds to check if balloons are still valid
+    public void validateAllBalloons() {
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            new HashMap<>(activeBalloons).forEach((uuid, balloon) -> {
+                Player player = Bukkit.getPlayer(uuid);
+
+                // If the player is online but the balloon is invalid or missing
+                if (player != null && player.isOnline() &&
+                        (!balloon.isValid() || balloon.isDead())) {
+                    // Remove the invalid balloon
+                    removeBalloon(uuid);
+
+                    // Check if they still have the balloon item in their custom inventory
+                    ItemStack balloonItem = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBalloon(player);
+                    if (balloonItem != null && ItemManager.isBalloon(balloonItem, configManager)) {
+                        // Recreate the balloon
+                        createBalloon(player, balloonItem);
+                    }
+                }
+            });
+        }, 100L, 100L); // Run every 5 seconds (100 ticks)
     }
 
     private void cleanupOldLeads(World world, Location location) {
@@ -60,21 +87,21 @@ public class BalloonManager {
                 .forEach(Entity::remove);
     }
 
-    private void removeBalloonEntity(UUID playerId) {
-        Player player = Bukkit.getPlayer(playerId);
+    private void removeBalloonEntity(UUID uuid) {
+        Player player = Bukkit.getPlayer(uuid);
         if (player != null) {
             cleanupOldLeads(player.getWorld(), player.getLocation());
         }
 
         // Remove lead anchor
-        Chicken leadAnchor = leadAnchors.remove(playerId);
+        Chicken leadAnchor = leadAnchors.remove(uuid);
         if (leadAnchor != null && leadAnchor.isValid()) {
             leadAnchor.setLeashHolder(null);
             leadAnchor.remove();
         }
 
         // Remove balloon
-        ArmorStand balloon = activeBalloons.remove(playerId);
+        ArmorStand balloon = activeBalloons.remove(uuid);
         if (balloon != null && balloon.isValid()) {
             balloon.remove();
         }
@@ -133,18 +160,8 @@ public class BalloonManager {
         String itemId = ItemManager.getItemId(balloonItem);
         if (itemId == null) return;
 
-        // Get current balloon from leggings slot
-        ItemStack currentBalloon = player.getInventory().getLeggings();
-
-        // Store the old balloon and put it back in inventory - only handle balloon items
-        if (currentBalloon != null && ItemManager.isBalloon(currentBalloon, configManager)) {
-            // Remove only the balloon entity first
-            removeBalloonEntity(player.getUniqueId());
-
-            // Add the old balloon back to inventory and clear leggings slot
-            player.getInventory().addItem(currentBalloon.clone());
-            player.getInventory().setLeggings(null);
-        }
+        // Remove existing balloon
+        removeBalloon(player.getUniqueId());
 
         // Calculate spawn location with offset above the player
         Location spawnLoc = player.getLocation().add(0, BALLOON_HEIGHT, 0);
@@ -175,40 +192,36 @@ public class BalloonManager {
             bobPhase.put(player.getUniqueId(), 0.0);
             swayPhase.put(player.getUniqueId(), 0.0);
         }, 2L);
-
-        // Set the new balloon in leggings slot and remove it from inventory
-        player.getInventory().setLeggings(balloonItem.clone());
-        player.getInventory().removeItem(balloonItem);
     }
 
-    public void removeBalloon(UUID playerId) {
+    public void removeBalloon(UUID uuid) {
         // Clean up tracking data
-        lastPlayerLocations.remove(playerId);
-        idleTime.remove(playerId);
-        bobPhase.remove(playerId);
-        swayPhase.remove(playerId);
+        lastPlayerLocations.remove(uuid);
+        idleTime.remove(uuid);
+        bobPhase.remove(uuid);
+        swayPhase.remove(uuid);
 
         // Only remove balloon-related entities
-        removeBalloonEntity(playerId);
+        removeBalloonEntity(uuid);
     }
 
     private void updateAllBalloons() {
-        new HashMap<>(activeBalloons).forEach((playerId, balloon) -> {
-            Player player = Bukkit.getPlayer(playerId);
-            Chicken leadAnchor = leadAnchors.get(playerId);
-            Location lastLoc = lastPlayerLocations.get(playerId);
+        new HashMap<>(activeBalloons).forEach((uuid, balloon) -> {
+            Player player = Bukkit.getPlayer(uuid);
+            Chicken leadAnchor = leadAnchors.get(uuid);
+            Location lastLoc = lastPlayerLocations.get(uuid);
 
             // Validate entities
             if (!balloon.isValid() || player == null || !player.isOnline() ||
                     leadAnchor == null || !leadAnchor.isValid()) {
-                removeBalloon(playerId);
+                removeBalloon(uuid);
                 return;
             }
 
-            // Validate item in leggings slot
-            ItemStack leggings = player.getInventory().getLeggings();
-            if (leggings == null || !ItemManager.isBalloon(leggings, configManager)) {
-                removeBalloon(playerId);
+            // Validate item in cosmetic inventory instead of leggings slot
+            ItemStack cosmeticBalloon = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBalloon(player);
+            if (cosmeticBalloon == null || !ItemManager.isBalloon(cosmeticBalloon, configManager)) {
+                removeBalloon(uuid);
                 return;
             }
 
@@ -217,12 +230,12 @@ public class BalloonManager {
             // Handle teleports or large movements
             if (lastLoc != null && (currentLoc.getWorld() != lastLoc.getWorld() ||
                     currentLoc.distanceSquared(lastLoc) > 100)) {
-                removeBalloon(playerId);
+                removeBalloon(uuid);
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     if (player.isOnline()) {
-                        ItemStack newLeggings = player.getInventory().getLeggings();
-                        if (newLeggings != null && ItemManager.isBalloon(newLeggings, configManager)) {
-                            createBalloon(player, newLeggings);
+                        ItemStack newBalloon = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBalloon(player);
+                        if (newBalloon != null && ItemManager.isBalloon(newBalloon, configManager)) {
+                            createBalloon(player, newBalloon);
                         }
                     }
                 }, 2L);
@@ -231,7 +244,7 @@ public class BalloonManager {
 
             // Calculate player movement
             double movement = lastLoc != null ? currentLoc.distance(lastLoc) : 0;
-            double currentIdleTime = idleTime.getOrDefault(playerId, 0.0);
+            double currentIdleTime = idleTime.getOrDefault(uuid, 0.0);
 
             // Update idle time based on movement
             if (movement < IDLE_THRESHOLD) {
@@ -239,15 +252,15 @@ public class BalloonManager {
             } else {
                 currentIdleTime = 0;
             }
-            idleTime.put(playerId, currentIdleTime);
+            idleTime.put(uuid, currentIdleTime);
 
             // Update bobbing and swaying phases
-            double currentBobPhase = bobPhase.getOrDefault(playerId, 0.0);
-            double currentSwayPhase = swayPhase.getOrDefault(playerId, 0.0);
+            double currentBobPhase = bobPhase.getOrDefault(uuid, 0.0);
+            double currentSwayPhase = swayPhase.getOrDefault(uuid, 0.0);
             currentBobPhase = (currentBobPhase + BOB_SPEED * 0.05) % (2 * Math.PI);
             currentSwayPhase = (currentSwayPhase + SWAY_SPEED * 0.05) % (2 * Math.PI);
-            bobPhase.put(playerId, currentBobPhase);
-            swayPhase.put(playerId, currentSwayPhase);
+            bobPhase.put(uuid, currentBobPhase);
+            swayPhase.put(uuid, currentSwayPhase);
 
             // Update balloon physics with improved movement and idle animations
             try {
@@ -256,12 +269,15 @@ public class BalloonManager {
                 double bobOffset = idleFactor * BOB_AMPLITUDE * Math.sin(currentBobPhase);
                 double swayOffset = idleFactor * SWAY_AMPLITUDE * Math.sin(currentSwayPhase);
 
+                // Calculate base position behind player based on their yaw
+                double angle = Math.toRadians(currentLoc.getYaw());
                 Location targetLoc = currentLoc.clone();
-                // Add -0.5 to Z position when idle, smoothly transitioning based on idleFactor
+
+                // Position balloon behind player using -sin(yaw) for X and -cos(yaw) for Z
                 targetLoc.add(
-                        swayOffset * Math.cos(currentLoc.getYaw()),
+                        -Math.sin(angle) * FOLLOW_DISTANCE + (swayOffset * Math.cos(angle)),
                         bobOffset,
-                        (swayOffset * Math.sin(currentLoc.getYaw())) + (-0.5 * idleFactor)
+                        -Math.cos(angle) * FOLLOW_DISTANCE + (swayOffset * Math.sin(angle))
                 );
 
                 // Apply base height and positioning
@@ -289,9 +305,20 @@ public class BalloonManager {
                         Math.toRadians(tiltX)
                 );
 
+                // Always match player's rotation exactly
+                float playerYaw = currentLoc.getYaw();
+
                 // Update balloon position and rotation
                 balloon.teleport(targetLoc);
-                balloon.setHeadPose(tilt);
+                balloon.setRotation(playerYaw, 0);
+
+                // Set head pose to match player direction
+                EulerAngle headPose = new EulerAngle(
+                        Math.toRadians(tiltZ),
+                        0, // Keep Y rotation at 0 to maintain forward orientation
+                        Math.toRadians(tiltX)
+                );
+                balloon.setHeadPose(headPose);
 
                 // Update chicken position to sit on top of balloon
                 leadAnchor.teleport(targetLoc.clone().add(0, 0.5, 0));
@@ -302,25 +329,25 @@ public class BalloonManager {
                 }
 
                 // Update tracking data
-                lastPlayerLocations.put(playerId, currentLoc.clone());
+                lastPlayerLocations.put(uuid, currentLoc.clone());
 
             } catch (Exception e) {
                 cleanupOldLeads(player.getWorld(), player.getLocation());
-                removeBalloon(playerId);
+                removeBalloon(uuid);
             }
         });
     }
 
     public void checkAndRestoreBalloon(Player player) {
-        ItemStack leggings = player.getInventory().getLeggings();
-        if (leggings != null && ItemManager.isBalloon(leggings, configManager)) {
-            createBalloon(player, leggings);
+        ItemStack balloon = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBalloon(player);
+        if (balloon != null && ItemManager.isBalloon(balloon, configManager)) {
+            createBalloon(player, balloon);
         }
     }
 
     public void shutdown() {
-        new HashMap<>(activeBalloons).forEach((playerId, balloon) -> {
-            removeBalloon(playerId);
+        new HashMap<>(activeBalloons).forEach((uuid, balloon) -> {
+            removeBalloon(uuid);
         });
         lastPlayerLocations.clear();
         idleTime.clear();
@@ -328,7 +355,7 @@ public class BalloonManager {
         swayPhase.clear();
     }
 
-    public boolean hasBalloon(UUID playerId) {
-        return activeBalloons.containsKey(playerId);
+    public boolean hasBalloon(UUID uuid) {
+        return activeBalloons.containsKey(uuid);
     }
 }

@@ -19,8 +19,6 @@ public class ItemManager {
             return createItem(configManager.getBackblingConfig(), id, "backbling");
         } else if (configManager.getBalloonsConfig().contains(id)) {
             return createItem(configManager.getBalloonsConfig(), id, "balloon");
-        } else if (configManager.getItemsConfig().contains(id)) {
-            return createItem(configManager.getItemsConfig(), id, "item");
         }
         return null;
     }
@@ -116,15 +114,6 @@ public class ItemManager {
                 meta.getPersistentDataContainer().get(typeKey, PersistentDataType.STRING).equals("balloon");
     }
 
-    public static boolean isGeneralItem(ItemStack item, ConfigManager configManager) {
-        if (item == null || !item.hasItemMeta()) return false;
-        ItemMeta meta = item.getItemMeta();
-
-        NamespacedKey typeKey = new NamespacedKey(GuppyCosmetics.getPlugin(GuppyCosmetics.class), "item_type");
-        return meta.getPersistentDataContainer().has(typeKey, PersistentDataType.STRING) &&
-                meta.getPersistentDataContainer().get(typeKey, PersistentDataType.STRING).equals("item");
-    }
-
     public static String getItemId(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return null;
         ItemMeta meta = item.getItemMeta();
@@ -146,8 +135,6 @@ public class ItemManager {
             permission = configManager.getBackblingConfig().getString(itemId + ".permission");
         } else if (configManager.getBalloonsConfig().contains(itemId)) {
             permission = configManager.getBalloonsConfig().getString(itemId + ".permission");
-        } else if (configManager.getItemsConfig().contains(itemId)) {
-            permission = configManager.getItemsConfig().getString(itemId + ".permission");
         }
 
         return permission == null || permission.isEmpty() || player.hasPermission(permission);

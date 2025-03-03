@@ -2,7 +2,11 @@ package com.tenshiku.guppycosmetics;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Chicken;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -10,9 +14,13 @@ import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.block.Action;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
+import java.util.UUID;
 
 public class EventListener implements Listener {
     private final GuppyCosmetics plugin;
@@ -70,13 +78,18 @@ public class EventListener implements Listener {
                     .replace("{item}", getItemName(item));
             player.sendMessage(ChatUtils.format(message));
         } else if (ItemManager.isBackbling(item, configManager)) {
-            equipBackblingToChestplate(player, item);
+            // Instead of equipping to chestplate, use the cosmetic inventory
+            plugin.getCosmeticInventoryManager().setBackbling(player, item.clone());
+            backblingManager.createBackbling(player, item);
+            player.getInventory().removeItem(item);
             String message = getPrefix() + configManager.getMessagesConfig().getString("equipped-message")
                     .replace("{item}", getItemName(item));
             player.sendMessage(ChatUtils.format(message));
         } else if (ItemManager.isBalloon(item, configManager)) {
-            // Always create the balloon, the manager will handle switching if one exists
+            // Instead of equipping to leggings, use the cosmetic inventory
+            plugin.getCosmeticInventoryManager().setBalloon(player, item.clone());
             balloonManager.createBalloon(player, item);
+            player.getInventory().removeItem(item);
             String message = getPrefix() + configManager.getMessagesConfig().getString("equipped-message")
                     .replace("{item}", getItemName(item));
             player.sendMessage(ChatUtils.format(message));
@@ -108,16 +121,49 @@ public class EventListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
 
+        // Check if it's our cosmetic inventory
+        if (event.getView().getTitle().equals("Cosmetics")) {
+            event.setCancelled(true); // Cancel all interactions with cosmetic inventory by default
+
+            ItemStack clickedItem = event.getCurrentItem();
+            ItemStack cursorItem = event.getCursor();
+
+            // Handle removing an item
+            if (clickedItem != null && !plugin.getCosmeticInventoryManager().isPlaceholderPane(clickedItem) &&
+                    (cursorItem == null || cursorItem.getType() == Material.AIR)) {
+                // They're picking up an item
+                if (event.getSlot() == CosmeticInventoryManager.BACKBLING_SLOT) {
+                    plugin.getCosmeticInventoryManager().removeBackbling(player);
+                    backblingManager.removeBackbling(player.getUniqueId());
+                } else if (event.getSlot() == CosmeticInventoryManager.BALLOON_SLOT) {
+                    plugin.getCosmeticInventoryManager().removeBalloon(player);
+                    balloonManager.removeBalloon(player.getUniqueId());
+                }
+            }
+            // Handle placing an item
+            else if (cursorItem != null && cursorItem.getType() != Material.AIR) {
+                if (event.getSlot() == CosmeticInventoryManager.BACKBLING_SLOT &&
+                        ItemManager.isBackbling(cursorItem, configManager)) {
+                    plugin.getCosmeticInventoryManager().setBackbling(player, cursorItem.clone());
+                    backblingManager.createBackbling(player, cursorItem);
+                    player.setItemOnCursor(null);
+                } else if (event.getSlot() == CosmeticInventoryManager.BALLOON_SLOT &&
+                        ItemManager.isBalloon(cursorItem, configManager)) {
+                    plugin.getCosmeticInventoryManager().setBalloon(player, cursorItem.clone());
+                    balloonManager.createBalloon(player, cursorItem);
+                    player.setItemOnCursor(null);
+                }
+            }
+            return;
+        }
+
         // Check cursor item (item being placed)
         ItemStack cursorItem = event.getCursor();
         if (cursorItem != null && !cursorItem.getType().isAir()) {
             String itemId = ItemManager.getItemId(cursorItem);
             if (itemId != null) {
-                // Check if attempting to equip hat (slot 39), backbling (slot 38), or balloon in leggings (slot 37)
-                if ((ItemManager.isHat(cursorItem, configManager) && event.getRawSlot() == 39) ||
-                        (ItemManager.isBackbling(cursorItem, configManager) && event.getRawSlot() == 38) ||
-                        (ItemManager.isBalloon(cursorItem, configManager) && event.getRawSlot() == 37)) {
-
+                // Only handle hat slots now, since backbling and balloon use cosmetic inventory
+                if (ItemManager.isHat(cursorItem, configManager) && event.getRawSlot() == 39) {
                     // Check permission before allowing equip
                     if (!ItemManager.hasPermission(player, itemId, configManager)) {
                         event.setCancelled(true);
@@ -126,13 +172,6 @@ public class EventListener implements Listener {
                         player.sendMessage(ChatUtils.format(message));
                         return;
                     }
-
-                    // If it's a balloon being equipped to leggings slot
-                    if (ItemManager.isBalloon(cursorItem, configManager) && event.getRawSlot() == 37) {
-                        plugin.getServer().getScheduler().runTask(plugin, () -> {
-                            balloonManager.createBalloon(player, cursorItem);
-                        });
-                    }
                 }
             }
         }
@@ -140,15 +179,8 @@ public class EventListener implements Listener {
         // Handle current slot item (item being taken)
         ItemStack currentItem = event.getCurrentItem();
         if (currentItem != null && !currentItem.getType().isAir()) {
-            // If taking a balloon from leggings slot
-            if (event.getRawSlot() == 37 && ItemManager.isBalloon(currentItem, configManager)) {
-                balloonManager.removeBalloon(player.getUniqueId());
-            }
-
-            // Handle backbling removal
-            if (event.getSlotType() == InventoryType.SlotType.ARMOR && ItemManager.isBackbling(currentItem, configManager)) {
-                backblingManager.removeBackbling(player.getUniqueId());
-            }
+            // We don't need to handle backbling or balloon removal here anymore
+            // as they're not in armor slots
         }
     }
 
@@ -163,27 +195,17 @@ public class EventListener implements Listener {
         player.getInventory().removeItem(item);
     }
 
-    private void equipBackblingToChestplate(Player player, ItemStack item) {
-        // Check if player already has a chestplate
-        ItemStack currentChestplate = player.getInventory().getChestplate();
-        if (currentChestplate != null) {
-            // Give back the current chestplate
-            player.getInventory().addItem(currentChestplate);
-        }
-
-        // Set the backbling item as the chestplate
-        player.getInventory().setChestplate(item.clone());
-        player.getInventory().removeItem(item);
-
-        // Create the visual backbling display
-        backblingManager.createBackbling(player, item);
-    }
-
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        backblingManager.removeBackbling(player.getUniqueId());
-        balloonManager.removeBalloon(player.getUniqueId());
+        UUID uuid = player.getUniqueId();
+
+        // Remove visual entities
+        backblingManager.removeBackbling(uuid);
+        balloonManager.removeBalloon(uuid);
+
+        // Clean up inventories
+        plugin.getCosmeticInventoryManager().onPlayerQuit(uuid);
     }
 
     @EventHandler
@@ -193,5 +215,39 @@ public class EventListener implements Listener {
             backblingManager.checkAndRestoreBackbling(player);
             balloonManager.checkAndRestoreBalloon(player);
         }, 5L);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onEntityDamage(EntityDamageEvent event) {
+        Entity entity = event.getEntity();
+        // Check if the entity is one of our balloon armorstands
+        if (entity instanceof ArmorStand && entity.getCustomName() != null &&
+                entity.getCustomName().startsWith("Balloon:")) {
+            // Cancel the damage event
+            event.setCancelled(true);
+        }
+
+        // Also protect the chicken anchor
+        if (entity instanceof Chicken && entity.getCustomName() != null &&
+                entity.getCustomName().startsWith("BalloonAnchor:")) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onEntityExplode(EntityExplodeEvent event) {
+        // Remove any balloon-related entities from the block list to prevent them from being destroyed
+        event.blockList().removeIf(block -> {
+            // Check nearby entities that might be our balloons
+            for (Entity entity : block.getWorld().getNearbyEntities(block.getLocation(), 2, 2, 2)) {
+                if ((entity instanceof ArmorStand && entity.getCustomName() != null &&
+                        entity.getCustomName().startsWith("Balloon:")) ||
+                        (entity instanceof Chicken && entity.getCustomName() != null &&
+                                entity.getCustomName().startsWith("BalloonAnchor:"))) {
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 }

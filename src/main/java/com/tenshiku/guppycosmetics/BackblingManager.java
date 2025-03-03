@@ -63,12 +63,12 @@ public class BackblingManager {
         lastPlayerLocations.put(player.getUniqueId(), player.getLocation());
     }
 
-    public void removeBackbling(UUID playerId) {
-        lastPlayerLocations.remove(playerId);
+    public void removeBackbling(UUID uuid) {
+        lastPlayerLocations.remove(uuid);
 
-        ItemDisplay backbling = activeBackblings.remove(playerId);
+        ItemDisplay backbling = activeBackblings.remove(uuid);
         if (backbling != null && backbling.isValid()) {
-            Player player = Bukkit.getPlayer(playerId);
+            Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
                 player.removePassenger(backbling);
             }
@@ -78,34 +78,34 @@ public class BackblingManager {
 
     private void updateAllBackblings() {
         // Create a copy of the entries to avoid concurrent modification
-        new HashMap<>(activeBackblings).forEach((playerId, backbling) -> {
-            Player player = Bukkit.getPlayer(playerId);
+        new HashMap<>(activeBackblings).forEach((uuid, backbling) -> {
+            Player player = Bukkit.getPlayer(uuid);
 
             // Remove invalid backblings or those whose players are offline
             if (!backbling.isValid() || player == null || !player.isOnline()) {
-                removeBackbling(playerId);
+                removeBackbling(uuid);
                 return;
             }
 
-            // Validate chestplate
-            ItemStack chestplate = player.getInventory().getChestplate();
-            if (chestplate == null || !ItemManager.isBackbling(chestplate, configManager)) {
-                removeBackbling(playerId);
+            // Validate from cosmetic inventory instead of chestplate
+            ItemStack cosmeticBackbling = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBackbling(player);
+            if (cosmeticBackbling == null || !ItemManager.isBackbling(cosmeticBackbling, configManager)) {
+                removeBackbling(uuid);
                 return;
             }
 
             // Handle teleports or large movements
             Location currentLoc = player.getLocation();
-            Location lastLoc = lastPlayerLocations.get(playerId);
+            Location lastLoc = lastPlayerLocations.get(uuid);
 
             if (lastLoc != null && (currentLoc.getWorld() != lastLoc.getWorld() ||
                     currentLoc.distanceSquared(lastLoc) > 100)) { // Distance > 10 blocks
-                removeBackbling(playerId);
+                removeBackbling(uuid);
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     if (player.isOnline()) {
-                        ItemStack newChestplate = player.getInventory().getChestplate();
-                        if (newChestplate != null && ItemManager.isBackbling(newChestplate, configManager)) {
-                            createBackbling(player, newChestplate);
+                        ItemStack newBackbling = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBackbling(player);
+                        if (newBackbling != null && ItemManager.isBackbling(newBackbling, configManager)) {
+                            createBackbling(player, newBackbling);
                         }
                     }
                 }, 2L);
@@ -116,21 +116,21 @@ public class BackblingManager {
             backbling.setRotation(currentLoc.getYaw(), 0.0f);
 
             // Store last location for next update
-            lastPlayerLocations.put(playerId, currentLoc.clone());
+            lastPlayerLocations.put(uuid, currentLoc.clone());
         });
     }
 
     public void checkAndRestoreBackbling(Player player) {
-        ItemStack chestplate = player.getInventory().getChestplate();
-        if (chestplate != null && ItemManager.isBackbling(chestplate, configManager)) {
-            createBackbling(player, chestplate);
+        ItemStack backbling = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBackbling(player);
+        if (backbling != null && ItemManager.isBackbling(backbling, configManager)) {
+            createBackbling(player, backbling);
         }
     }
 
     public void shutdown() {
         // Remove all backblings on plugin disable
-        new HashMap<>(activeBackblings).forEach((playerId, backbling) -> {
-            removeBackbling(playerId);
+        new HashMap<>(activeBackblings).forEach((uuid, backbling) -> {
+            removeBackbling(uuid);
         });
         lastPlayerLocations.clear();
     }

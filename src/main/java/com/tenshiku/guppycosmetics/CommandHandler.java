@@ -38,6 +38,10 @@ public class CommandHandler implements CommandExecutor {
             case "spawn":
                 handleSpawn(sender, args);
                 break;
+            case "cosmetics":
+            case "inventory":
+                handleCosmeticInventory(sender);
+                break;
             default:
                 sendUsage(sender);
         }
@@ -163,6 +167,22 @@ public class CommandHandler implements CommandExecutor {
         sender.sendMessage(ChatUtils.format(message));
     }
 
+    private void handleCosmeticInventory(CommandSender sender) {
+        // Check permission
+        if (!sender.hasPermission("guppycosmetics.cosmetics")) {
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("no-permission")));
+            return;
+        }
+
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("player-only")));
+            return;
+        }
+
+        Player player = (Player) sender;
+        plugin.getCosmeticInventoryManager().openCosmeticInventory(player);
+    }
+
     private String getItemName(ItemStack item) {
         if (item != null && item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
             return PlainTextComponentSerializer.plainText().serialize(item.getItemMeta().displayName());
@@ -183,6 +203,10 @@ public class CommandHandler implements CommandExecutor {
         }
         if (sender.hasPermission("guppycosmetics.reload")) {
             sender.sendMessage(ChatUtils.format(configManager.getMessagesConfig().getString("reload-help")));
+        }
+        // Add help for cosmetics inventory command
+        if (sender.hasPermission("guppycosmetics.cosmetics")) {
+            sender.sendMessage(ChatUtils.format(configManager.getMessagesConfig().getString("cosmetics-help")));
         }
     }
 }

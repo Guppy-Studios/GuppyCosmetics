@@ -3,8 +3,7 @@ package com.tenshiku.guppycosmetics;
 public enum CosmeticType {
     HAT("hat"),
     BALLOON("balloon"),
-    BACKBLING("backbling"),
-    ITEM("item");
+    BACKBLING("backbling");
 
     private final String identifier;
 

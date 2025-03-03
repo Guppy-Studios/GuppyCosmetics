@@ -11,8 +11,8 @@ import java.util.logging.Level;
 
 public class ConfigManager {
     private final GuppyCosmetics plugin;
-    private File hatsFile, backblingFile, balloonsFile, itemsFile, messagesFile;
-    private FileConfiguration hatsConfig, backblingConfig, balloonsConfig, itemsConfig, messagesConfig;
+    private File hatsFile, backblingFile, balloonsFile, messagesFile;
+    private FileConfiguration hatsConfig, backblingConfig, balloonsConfig, messagesConfig;
 
     public ConfigManager(GuppyCosmetics plugin) {
         this.plugin = plugin;
@@ -29,21 +29,18 @@ public class ConfigManager {
         hatsFile = new File(cosmeticsDir, "hats.yml");
         backblingFile = new File(cosmeticsDir, "backbling.yml");
         balloonsFile = new File(cosmeticsDir, "balloons.yml");
-        itemsFile = new File(cosmeticsDir, "items.yml");
         messagesFile = new File(plugin.getDataFolder(), "messages.yml");
 
         // Save default configurations if they don't exist
         if (!hatsFile.exists()) saveResource("cosmetics/hats.yml", false);
         if (!backblingFile.exists()) saveResource("cosmetics/backbling.yml", false);
         if (!balloonsFile.exists()) saveResource("cosmetics/balloons.yml", false);
-        if (!itemsFile.exists()) saveResource("cosmetics/items.yml", false);
         if (!messagesFile.exists()) saveResource("messages.yml", false);
 
         // Load configurations
         hatsConfig = YamlConfiguration.loadConfiguration(hatsFile);
         backblingConfig = YamlConfiguration.loadConfiguration(backblingFile);
         balloonsConfig = YamlConfiguration.loadConfiguration(balloonsFile);
-        itemsConfig = YamlConfiguration.loadConfiguration(itemsFile);
         messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
     }
 
@@ -92,10 +89,6 @@ public class ConfigManager {
 
     public FileConfiguration getBalloonsConfig() {
         return balloonsConfig;
-    }
-
-    public FileConfiguration getItemsConfig() {
-        return itemsConfig;
     }
 
     public FileConfiguration getMessagesConfig() {

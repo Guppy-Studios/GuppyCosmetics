@@ -26,6 +26,8 @@ public class CommandCompleter implements TabCompleter {
             if (sender.hasPermission("guppycosmetics.spawn")) completions.add("spawn");
             if (sender.hasPermission("guppycosmetics.give")) completions.add("give");
             if (sender.hasPermission("guppycosmetics.reload")) completions.add("reload");
+            completions.add("cosmetics"); // Everyone can access cosmetics inventory
+            completions.add("inventory"); // Alias for cosmetics
         }
         else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("give") && sender.hasPermission("guppycosmetics.give")) {
@@ -77,8 +79,6 @@ public class CommandCompleter implements TabCompleter {
                 return getConfigSectionKeys(configManager.getBackblingConfig(), sender);
             case BALLOON:
                 return getConfigSectionKeys(configManager.getBalloonsConfig(), sender);
-            case ITEM:
-                return getConfigSectionKeys(configManager.getItemsConfig(), sender);
             default:
                 return new ArrayList<>();
         }
