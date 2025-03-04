@@ -184,39 +184,66 @@ public class CosmeticInventoryManager {
         ItemStack backbling = getBackbling(player);
         ItemStack balloon = getBalloon(player);
 
-        // Save in config (create a "players.yml" file for this)
-        FileConfiguration playerConfig = YamlConfiguration.loadConfiguration(
-                new File(plugin.getDataFolder(), "players.yml"));
+        // Only proceed if there's actually data to save
+        if (backbling == null && balloon == null) {
+            return;
+        }
+
+        // Load the current file
+        File configFile = new File(plugin.getDataFolder(), "players.yml");
+        FileConfiguration playerConfig;
+
+        // Create the file if it doesn't exist
+        if (!configFile.exists()) {
+            try {
+                configFile.createNewFile();
+                playerConfig = YamlConfiguration.loadConfiguration(configFile);
+                playerConfig.createSection("players");
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to create players.yml: " + e.getMessage());
+                return;
+            }
+        } else {
+            playerConfig = YamlConfiguration.loadConfiguration(configFile);
+        }
 
         // Clear existing data for this player
         playerConfig.set("players." + uuid, null);
 
-        // If there are cosmetics to save
-        if (backbling != null || balloon != null) {
-            if (backbling != null) {
-                playerConfig.set("players." + uuid + ".backbling", backbling);
-            }
-            if (balloon != null) {
-                playerConfig.set("players." + uuid + ".balloon", balloon);
-            }
+        // Save cosmetics data if present
+        if (backbling != null) {
+            playerConfig.set("players." + uuid + ".backbling", backbling);
+        }
 
-            // Save the file
-            try {
-                playerConfig.save(new File(plugin.getDataFolder(), "players.yml"));
-            } catch (IOException e) {
-                plugin.getLogger().severe("Failed to save cosmetic data for player: " + player.getName());
-                e.printStackTrace();
-            }
+        if (balloon != null) {
+            playerConfig.set("players." + uuid + ".balloon", balloon);
+        }
+
+        // Save the file with proper error handling
+        try {
+            playerConfig.save(configFile);
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to save cosmetic data for player: " + player.getName());
+            plugin.getLogger().severe("Error: " + e.getMessage());
         }
     }
 
     public void loadPlayerCosmetics(Player player) {
-        // Get player's UUID as a string for storage
+        // Get player's UUID as a string
         String uuid = player.getUniqueId().toString();
 
-        // Load from config
+        // Load from config with better error handling
         File configFile = new File(plugin.getDataFolder(), "players.yml");
         if (!configFile.exists()) {
+            plugin.getLogger().warning("No players.yml found, creating a new one");
+            try {
+                configFile.createNewFile();
+                FileConfiguration emptyConfig = YamlConfiguration.loadConfiguration(configFile);
+                emptyConfig.createSection("players");
+                emptyConfig.save(configFile);
+            } catch (IOException e) {
+                plugin.getLogger().severe("Error creating players.yml: " + e.getMessage());
+            }
             return;  // No saved data yet
         }
 
@@ -224,18 +251,25 @@ public class CosmeticInventoryManager {
 
         // Check if player has saved cosmetics
         if (playerConfig.contains("players." + uuid)) {
-            ItemStack backbling = playerConfig.getItemStack("players." + uuid + ".backbling");
-            ItemStack balloon = playerConfig.getItemStack("players." + uuid + ".balloon");
+            try {
+                ItemStack backbling = playerConfig.getItemStack("players." + uuid + ".backbling");
+                ItemStack balloon = playerConfig.getItemStack("players." + uuid + ".balloon");
 
-            // Get the cosmetic inventory and set items
-            Inventory cosmeticInventory = getCosmeticInventory(player);
+                // Get the cosmetic inventory and set items
+                Inventory cosmeticInventory = getCosmeticInventory(player);
 
-            if (backbling != null) {
-                cosmeticInventory.setItem(BACKBLING_SLOT, backbling);
-            }
+                if (backbling != null) {
+                    cosmeticInventory.setItem(BACKBLING_SLOT, backbling);
+                    plugin.getLogger().info("Loaded backbling for player: " + player.getName());
+                }
 
-            if (balloon != null) {
-                cosmeticInventory.setItem(BALLOON_SLOT, balloon);
+                if (balloon != null) {
+                    cosmeticInventory.setItem(BALLOON_SLOT, balloon);
+                    plugin.getLogger().info("Loaded balloon for player: " + player.getName());
+                }
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error loading cosmetics for player: " + player.getName());
+                plugin.getLogger().severe("Error: " + e.getMessage());
             }
         }
     }

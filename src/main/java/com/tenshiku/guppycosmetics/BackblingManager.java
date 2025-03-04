@@ -98,8 +98,31 @@ public class BackblingManager {
             Location currentLoc = player.getLocation();
             Location lastLoc = lastPlayerLocations.get(uuid);
 
-            if (lastLoc != null && (currentLoc.getWorld() != lastLoc.getWorld() ||
-                    currentLoc.distanceSquared(lastLoc) > 100)) { // Distance > 10 blocks
+            if (lastLoc != null) {
+                // Check if player has teleported or moved significantly
+                boolean hasTeleported = currentLoc.getWorld() != lastLoc.getWorld();
+                boolean hasMovedFar = currentLoc.distanceSquared(lastLoc) > 100; // > 10 blocks
+
+                if (hasTeleported || hasMovedFar) {
+                    // Always recreate the backbling on significant movements for proper attachment
+                    removeBackbling(uuid);
+
+                    // Use a slightly longer delay for stability
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        if (player.isOnline()) {
+                            ItemStack newBackbling = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBackbling(player);
+                            if (newBackbling != null && ItemManager.isBackbling(newBackbling, configManager)) {
+                                createBackbling(player, newBackbling);
+                            }
+                        }
+                    }, 3L);
+                    return;
+                }
+            }
+
+            // Check if the entity is actually riding the player
+            // If not, recreate it (fixes stuck cosmetics)
+            if (!player.getPassengers().contains(backbling)) {
                 removeBackbling(uuid);
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     if (player.isOnline()) {

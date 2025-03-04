@@ -200,7 +200,10 @@ public class EventListener implements Listener {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
-        // Remove visual entities
+        // Save player cosmetics data first
+        plugin.getCosmeticInventoryManager().savePlayerCosmetics(player);
+
+        // Then remove visual entities
         backblingManager.removeBackbling(uuid);
         balloonManager.removeBalloon(uuid);
 
@@ -212,9 +215,14 @@ public class EventListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             Player player = event.getPlayer();
+
+            // First, load the saved cosmetics from file
+            plugin.getCosmeticInventoryManager().loadPlayerCosmetics(player);
+
+            // Then restore visual entities
             backblingManager.checkAndRestoreBackbling(player);
             balloonManager.checkAndRestoreBalloon(player);
-        }, 5L);
+        }, 5L); // Keep a small delay for stability
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

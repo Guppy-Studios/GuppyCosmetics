@@ -228,18 +228,46 @@ public class BalloonManager {
             Location currentLoc = player.getLocation();
 
             // Handle teleports or large movements
-            if (lastLoc != null && (currentLoc.getWorld() != lastLoc.getWorld() ||
-                    currentLoc.distanceSquared(lastLoc) > 100)) {
-                removeBalloon(uuid);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    if (player.isOnline()) {
-                        ItemStack newBalloon = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBalloon(player);
-                        if (newBalloon != null && ItemManager.isBalloon(newBalloon, configManager)) {
-                            createBalloon(player, newBalloon);
+            if (lastLoc != null) {
+                // Check if player has teleported or moved significantly
+                boolean hasTeleported = currentLoc.getWorld() != lastLoc.getWorld();
+                boolean hasMovedFar = currentLoc.distanceSquared(lastLoc) > 100; // > 10 blocks
+
+                if (hasTeleported || hasMovedFar) {
+                    // Always recreate the balloon on teleports or significant movements
+                    removeBalloon(uuid);
+
+                    // Use a slightly longer delay for stability
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        if (player.isOnline()) {
+                            ItemStack newBalloon = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBalloon(player);
+                            if (newBalloon != null && ItemManager.isBalloon(newBalloon, configManager)) {
+                                createBalloon(player, newBalloon);
+                            }
                         }
-                    }
-                }, 2L);
-                return;
+                    }, 3L);
+                    return;
+                }
+            }
+
+            // Check for invalid leadholder relationship
+            if (leadAnchor.getLeashHolder() == null || !leadAnchor.getLeashHolder().equals(player)) {
+                // Fix the leash holder if possible
+                try {
+                    leadAnchor.setLeashHolder(player);
+                } catch (Exception e) {
+                    // If we can't fix it, recreate the balloon completely
+                    removeBalloon(uuid);
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        if (player.isOnline()) {
+                            ItemStack newBalloon = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBalloon(player);
+                            if (newBalloon != null && ItemManager.isBalloon(newBalloon, configManager)) {
+                                createBalloon(player, newBalloon);
+                            }
+                        }
+                    }, 2L);
+                    return;
+                }
             }
 
             // Calculate player movement
@@ -323,17 +351,29 @@ public class BalloonManager {
                 // Update chicken position to sit on top of balloon
                 leadAnchor.teleport(targetLoc.clone().add(0, 0.5, 0));
 
-                // If balloon is too far, teleport closer
+                // Check if balloon is too far and force teleport it closer
                 if (balloon.getLocation().distance(currentLoc) > 5.0) {
                     balloon.teleport(currentLoc.clone().add(0, BALLOON_HEIGHT, 0));
+                    leadAnchor.teleport(balloon.getLocation().clone().add(0, 0.5, 0));
                 }
 
                 // Update tracking data
                 lastPlayerLocations.put(uuid, currentLoc.clone());
 
             } catch (Exception e) {
+                plugin.getLogger().warning("Error updating balloon for player " + player.getName() + ": " + e.getMessage());
                 cleanupOldLeads(player.getWorld(), player.getLocation());
                 removeBalloon(uuid);
+
+                // Try to recreate after error
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (player.isOnline()) {
+                        ItemStack newBalloon = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBalloon(player);
+                        if (newBalloon != null && ItemManager.isBalloon(newBalloon, configManager)) {
+                            createBalloon(player, newBalloon);
+                        }
+                    }
+                }, 5L);
             }
         });
     }
