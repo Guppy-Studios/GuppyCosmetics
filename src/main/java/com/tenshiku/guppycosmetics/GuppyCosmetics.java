@@ -15,7 +15,6 @@ public class GuppyCosmetics extends JavaPlugin {
     private EventListener eventListener;
     private BackblingManager backblingManager;
     private BalloonManager balloonManager;
-    private HatManager hatManager;
     private CosmeticInventoryManager cosmeticInventoryManager;
 
     @Override
@@ -49,10 +48,9 @@ public class GuppyCosmetics extends JavaPlugin {
         // Initialize managers
         backblingManager = new BackblingManager(this, configManager);
         balloonManager = new BalloonManager(this, configManager);
-        hatManager = new HatManager(this, configManager);
 
         // Pass all managers to EventListener
-        eventListener = new EventListener(this, configManager, backblingManager, balloonManager, hatManager);
+        eventListener = new EventListener(this, configManager, backblingManager, balloonManager);
         getServer().getPluginManager().registerEvents(eventListener, this);
 
         // Register command handler and tab completer
@@ -78,9 +76,6 @@ public class GuppyCosmetics extends JavaPlugin {
         }
         if (balloonManager != null) {
             balloonManager.shutdown();
-        }
-        if (hatManager != null) {
-            hatManager.shutdown();
         }
     }
 

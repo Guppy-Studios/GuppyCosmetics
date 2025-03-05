@@ -1,6 +1,5 @@
 package com.tenshiku.guppycosmetics;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -45,17 +44,8 @@ public class ItemManager {
             meta.lore(ChatUtils.formatList(lore));
         }
 
-        // Set item model (previously custom_model_data)
-        if (config.contains(id + ".item_model")) {
-            String itemModel = config.getString(id + ".item_model");
-            meta.getPersistentDataContainer().set(
-                    new NamespacedKey(GuppyCosmetics.getPlugin(GuppyCosmetics.class), "item_model"),
-                    PersistentDataType.STRING,
-                    itemModel
-            );
-        }
-        // For backward compatibility
-        else if (config.contains(id + ".custom_model_data")) {
+        // Set custom model data
+        if (config.contains(id + ".custom_model_data")) {
             int modelData = config.getInt(id + ".custom_model_data");
             meta.setCustomModelData(modelData);
         }
@@ -81,16 +71,6 @@ public class ItemManager {
                     new org.bukkit.attribute.AttributeModifier("armor", 0, org.bukkit.attribute.AttributeModifier.Operation.ADD_NUMBER));
         }
 
-        // Add overlay information to meta for later use
-        if (type.equals("hat") && config.contains(id + ".overlay")) {
-            String overlayPath = config.getString(id + ".overlay");
-            meta.getPersistentDataContainer().set(
-                    new NamespacedKey(GuppyCosmetics.getPlugin(GuppyCosmetics.class), "overlay_path"),
-                    PersistentDataType.STRING,
-                    overlayPath
-            );
-        }
-
         // Store the item ID and type in persistent data
         meta.getPersistentDataContainer().set(
                 new NamespacedKey(GuppyCosmetics.getPlugin(GuppyCosmetics.class), "item_id"),
@@ -104,27 +84,6 @@ public class ItemManager {
         );
 
         item.setItemMeta(meta);
-
-        // For hats with overlays, create a new item with the equippable component
-        if (type.equals("hat") && config.contains(id + ".overlay")) {
-            String overlayPath = config.getString(id + ".overlay");
-            String itemModelStr = config.getString(id + ".item_model", "minecraft:paper");
-
-            // Create command string similar to your vanilla command example
-            String command = String.format(
-                    "minecraft:give @p %s[minecraft:item_model=\"%s\",minecraft:equippable={slot:\"head\",equip_sound:\"block.glass.break\",camera_overlay:\"%s\",dispensable:true}]",
-                    materialStr.toLowerCase(),
-                    itemModelStr,
-                    overlayPath
-            );
-
-            // Log the command for debugging
-            GuppyCosmetics.getPlugin(GuppyCosmetics.class).getLogger().info("Attempting to create hat with overlay: " + command);
-
-            // We'll just return the normal item, and let EventListener handle conversion
-            // We don't actually run the command here since that would require a player context
-        }
-
         return item;
     }
 
@@ -162,28 +121,6 @@ public class ItemManager {
         NamespacedKey idKey = new NamespacedKey(GuppyCosmetics.getPlugin(GuppyCosmetics.class), "item_id");
         if (meta.getPersistentDataContainer().has(idKey, PersistentDataType.STRING)) {
             return meta.getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
-        }
-        return null;
-    }
-
-    public static String getItemModel(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return null;
-        ItemMeta meta = item.getItemMeta();
-
-        NamespacedKey modelKey = new NamespacedKey(GuppyCosmetics.getPlugin(GuppyCosmetics.class), "item_model");
-        if (meta.getPersistentDataContainer().has(modelKey, PersistentDataType.STRING)) {
-            return meta.getPersistentDataContainer().get(modelKey, PersistentDataType.STRING);
-        }
-        return null;
-    }
-
-    public static String getOverlayPath(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return null;
-        ItemMeta meta = item.getItemMeta();
-
-        NamespacedKey overlayKey = new NamespacedKey(GuppyCosmetics.getPlugin(GuppyCosmetics.class), "overlay_path");
-        if (meta.getPersistentDataContainer().has(overlayKey, PersistentDataType.STRING)) {
-            return meta.getPersistentDataContainer().get(overlayKey, PersistentDataType.STRING);
         }
         return null;
     }
