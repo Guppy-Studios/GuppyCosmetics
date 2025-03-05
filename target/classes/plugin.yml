@@ -1,5 +1,5 @@
 name: GuppyCosmetics
-version: '2.3.1'
+version: '2.3.2'
 main: com.tenshiku.guppycosmetics.GuppyCosmetics
 api-version: '1.21'
 author: tenshiku

@@ -1,5 +1,5 @@
 # Define custom balloons here.
-# Each balloon should have a unique ID, material, name, lore, and custom_model_data.
+# Each balloon should have a unique ID, material, name, lore, and item_model.
 # MiniMessage Format Examples:
 # Colors: <red>, <blue>, <green>, <yellow>, etc.
 # Formatting: <bold>, <italic>, <underlined>, <strikethrough>
@@ -13,7 +13,7 @@ red_balloon:
     - "<#FF6B6B>A bright red balloon that floats"
     - "<italic><gray>Brings joy wherever it goes"
     - "<hover:show_text:'<red>Party Collection'>🎈 Festive Item</hover>"
-  custom_model_data: 10
+  item_model: "minecraft:item/custom/red_balloon"
   permission: guppycosmetics.balloon.red
 
 rainbow_balloon:
@@ -23,4 +23,4 @@ rainbow_balloon:
     - "<gradient:#FF0000:#00FF00:#0000FF>A bundle of colorful balloons</gradient>"
     - "<italic><gray>Spreads happiness and color"
     - "<hover:show_text:'<rainbow>Ultra Rare!</rainbow>'>✨ Special Collection</hover>"
-  custom_model_data: 11
+  item_model: "minecraft:item/custom/rainbow_balloon"

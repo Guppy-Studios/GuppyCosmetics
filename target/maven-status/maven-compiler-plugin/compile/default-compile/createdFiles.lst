@@ -1,5 +1,6 @@
 com\tenshiku\guppycosmetics\ConfigManager.class
 com\tenshiku\guppycosmetics\CommandCompleter$1.class
+com\tenshiku\guppycosmetics\HatManager.class
 com\tenshiku\guppycosmetics\CommandHandler.class
 com\tenshiku\guppycosmetics\EventListener.class
 com\tenshiku\guppycosmetics\CosmeticType.class

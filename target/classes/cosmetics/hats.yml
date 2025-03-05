@@ -1,5 +1,5 @@
 # Define custom hats here.
-# Each hat should have a unique ID, material, name, lore, and custom_model_data.
+# Each hat should have a unique ID, material, name, lore, and item_model.
 # MiniMessage Format Examples:
 # Colors: <red>, <blue>, <green>, <yellow>, etc.
 # Formatting: <bold>, <italic>, <underlined>, <strikethrough>
@@ -14,17 +14,7 @@ example_hat:
     - "<gray>A fancy hat with a gradient name"
     - "<#55FFFF>Custom hex color text"
     - "<hover:show_text:'<red>Very rare!'>Rarity: <gold>★★★★★</hover>"
-  custom_model_data: 1
-  permission: example.permission.node
-
-flame_crown:
-  material: LEATHER_HORSE_ARMOR
-  name: "<bold><#FF5555>Flame Crown</bold>"
-  lore:
-    - "<gradient:red:orange>A blazing hot crown</gradient>"
-    - "<italic><gray>Forged in dragon's fire"
-    - "<dark_red>♨ <red>Heat Level: <gold>Maximum"
-  custom_model_data: 2
+  item_model: "minecraft:leather_horse_armor"
   permission: example.permission.node
 
 rainbow_hat:
@@ -34,4 +24,16 @@ rainbow_hat:
     - "<gradient:#8A2BE2:#FF69B4>Magical rainbow powers"
     - "<light_purple>✦ <italic>Sparkles with energy"
     - "<aqua>Made with unicorn dust"
-  custom_model_data: 3
+  item_model: "minecraft:item/custom/rainbow_hat"
+
+# Hat with camera overlay that changes first-person view
+scuba_mask:
+  material: GLASS
+  name: "<gradient:blue:aqua>Scuba Mask</gradient>"
+  lore:
+    - "<aqua>Discover the underwater world"
+    - "<gray>Equipped with enhanced vision"
+    - "<blue>⋆ <italic>Deep sea explorer equipment"
+  item_model: "minecraft:item/custom/scuba_mask"
+  # Overlay texture path - creates a first-person dive mask effect
+  overlay: "textures/overlay/scuba_mask"
