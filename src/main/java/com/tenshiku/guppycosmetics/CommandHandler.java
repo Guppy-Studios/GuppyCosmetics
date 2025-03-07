@@ -1,12 +1,14 @@
 package com.tenshiku.guppycosmetics;
 
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.persistence.PersistentDataType;
 
 public class CommandHandler implements CommandExecutor {
     private final GuppyCosmetics plugin;
@@ -66,11 +68,14 @@ public class CommandHandler implements CommandExecutor {
             return;
         }
 
-        // Validate args length
-        if (args.length != 3) {
+        // Validate args length (allow optional "equip" parameter)
+        if (args.length < 3 || args.length > 4) {
             sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("spawn-usage")));
             return;
         }
+
+        // Check if the optional "equip" parameter is valid
+        boolean shouldEquip = args.length == 4 && args[3].equalsIgnoreCase("equip");
 
         // Ensure sender is a player
         if (!(sender instanceof Player)) {
@@ -88,10 +93,21 @@ public class CommandHandler implements CommandExecutor {
             return;
         }
 
-        ItemStack item = ItemManager.getItemById(itemId, configManager);
+        // Check if item exists in config
+        boolean itemExists = false;
+        switch (type) {
+            case HAT:
+                itemExists = configManager.getHatsConfig().contains(itemId);
+                break;
+            case BACKBLING:
+                itemExists = configManager.getBackblingConfig().contains(itemId);
+                break;
+            case BALLOON:
+                itemExists = configManager.getBalloonsConfig().contains(itemId);
+                break;
+        }
 
-        // Check if item exists
-        if (item == null) {
+        if (!itemExists) {
             String message = getPrefix() + configManager.getMessagesConfig().getString("invalid-item-id")
                     .replace("{item-id}", itemId);
             sender.sendMessage(ChatUtils.format(message));
@@ -104,12 +120,115 @@ public class CommandHandler implements CommandExecutor {
             return;
         }
 
+        // Special handling for hats with overlays
+        if (type == CosmeticType.HAT && ItemManager.hasOverlayInConfig(itemId, configManager)) {
+            boolean success = ItemManager.giveHatWithOverlay(player, itemId, configManager);
+            if (success) {
+                // Send successful message
+                String itemName = configManager.getHatsConfig().getString(itemId + ".name", itemId);
+                String message = getPrefix() + configManager.getMessagesConfig().getString("item-given")
+                        .replace("{item}", ChatUtils.formatToPlainText(itemName))
+                        .replace("{player}", player.getName());
+                sender.sendMessage(ChatUtils.format(message));
+
+                // If this is a spawn command for the player themselves, offer to equip it
+                if (sender == player && args.length == 4 && args[3].equalsIgnoreCase("equip")) {
+                    // Use a delayed task to find and equip the newly created hat
+                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                        // Save current helmet if needed
+                        ItemStack currentHelmet = player.getInventory().getHelmet();
+                        int hatSlot = -1;
+
+                        // Find the newly created hat in player's inventory
+                        for (int i = 0; i < player.getInventory().getContents().length; i++) {
+                            ItemStack item = player.getInventory().getContents()[i];
+                            if (item != null && item.hasItemMeta() &&
+                                    item.getItemMeta().getPersistentDataContainer().has(
+                                            new NamespacedKey(plugin, "item_id"), PersistentDataType.STRING) &&
+                                    itemId.equals(item.getItemMeta().getPersistentDataContainer().get(
+                                            new NamespacedKey(plugin, "item_id"), PersistentDataType.STRING))) {
+
+                                hatSlot = i;
+
+                                // Set the item as helmet and remove from inventory
+                                player.getInventory().setHelmet(item.clone());
+                                player.getInventory().removeItem(item);
+
+                                // If player was already wearing a helmet and we found the hat slot
+                                if (currentHelmet != null) {
+                                    // Put old helmet in the slot where the new hat was
+                                    player.getInventory().setItem(hatSlot, currentHelmet);
+                                }
+
+                                // Send equipped message
+                                String equippedMessage = getPrefix() + configManager.getMessagesConfig().getString("equipped-message")
+                                        .replace("{item}", getItemName(item));
+                                player.sendMessage(ChatUtils.format(equippedMessage));
+                                break;
+                            }
+                        }
+                    }, 5L); // Wait 5 ticks to ensure item is properly in inventory with updated metadata
+                }
+            } else {
+                sender.sendMessage(ChatUtils.format(getPrefix() + "Failed to create hat with overlay."));
+            }
+            return;
+        }
+
+        // Standard item generation for other types
+        ItemStack item = ItemManager.getItemById(itemId, configManager);
+
+        // Check if item was created successfully
+        if (item == null) {
+            String message = getPrefix() + configManager.getMessagesConfig().getString("invalid-item-id")
+                    .replace("{item-id}", itemId);
+            sender.sendMessage(ChatUtils.format(message));
+            return;
+        }
+
         // Give item to player
         player.getInventory().addItem(item);
         String message = getPrefix() + configManager.getMessagesConfig().getString("item-given")
                 .replace("{item}", getItemName(item))
                 .replace("{player}", player.getName());
         sender.sendMessage(ChatUtils.format(message));
+
+        // If should equip and it's a hat
+        if (shouldEquip && type == CosmeticType.HAT) {
+            // Save current helmet if needed
+            ItemStack currentHelmet = player.getInventory().getHelmet();
+
+            // Find the slot where the newly given hat is
+            int hatSlot = -1;
+            ItemStack[] contents = player.getInventory().getContents();
+            for (int i = 0; i < contents.length; i++) {
+                ItemStack slotItem = contents[i];
+                if (slotItem != null &&
+                        slotItem.hasItemMeta() &&
+                        itemId.equals(ItemManager.getItemId(slotItem))) {
+                    hatSlot = i;
+                    break;
+                }
+            }
+
+            // Set the item as helmet and remove from inventory
+            player.getInventory().setHelmet(item.clone());
+            player.getInventory().removeItem(item);
+
+            // If player was already wearing a helmet and we found the hat slot
+            if (currentHelmet != null && hatSlot != -1) {
+                // Put old helmet in the slot where the new hat was
+                player.getInventory().setItem(hatSlot, currentHelmet);
+            } else if (currentHelmet != null) {
+                // Try to add to inventory normally as fallback
+                player.getInventory().addItem(currentHelmet);
+            }
+
+            // Send equipped message
+            String equippedMessage = getPrefix() + configManager.getMessagesConfig().getString("equipped-message")
+                    .replace("{item}", getItemName(item));
+            player.sendMessage(ChatUtils.format(equippedMessage));
+        }
     }
 
     private void handleGive(CommandSender sender, String[] args) {
@@ -143,6 +262,27 @@ public class CommandHandler implements CommandExecutor {
             return;
         }
 
+        // Check item-specific permission for target player
+        if (!ItemManager.hasPermission(target, itemId, configManager)) {
+            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("target-no-permission")));
+            return;
+        }
+
+        // Special handling for hats with overlays
+        if (type == CosmeticType.HAT && ItemManager.hasOverlayInConfig(itemId, configManager)) {
+            boolean success = ItemManager.giveHatWithOverlay(target, itemId, configManager);
+            if (success) {
+                String itemName = configManager.getHatsConfig().getString(itemId + ".name", itemId);
+                String message = getPrefix() + configManager.getMessagesConfig().getString("item-given")
+                        .replace("{item}", ChatUtils.formatToPlainText(itemName))
+                        .replace("{player}", target.getName());
+                sender.sendMessage(ChatUtils.format(message));
+            } else {
+                sender.sendMessage(ChatUtils.format(getPrefix() + "Failed to create hat with overlay."));
+            }
+            return;
+        }
+
         ItemStack item = ItemManager.getItemById(itemId, configManager);
 
         // Check if item exists
@@ -150,12 +290,6 @@ public class CommandHandler implements CommandExecutor {
             String message = getPrefix() + configManager.getMessagesConfig().getString("invalid-item-id")
                     .replace("{item-id}", itemId);
             sender.sendMessage(ChatUtils.format(message));
-            return;
-        }
-
-        // Check item-specific permission for target player
-        if (!ItemManager.hasPermission(target, itemId, configManager)) {
-            sender.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("target-no-permission")));
             return;
         }
 

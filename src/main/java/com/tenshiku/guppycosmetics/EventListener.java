@@ -1,6 +1,7 @@
 package com.tenshiku.guppycosmetics;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ArmorStand;
@@ -19,6 +20,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.block.Action;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.UUID;
 
@@ -73,10 +75,8 @@ public class EventListener implements Listener {
         }
 
         if (ItemManager.isHat(item, configManager)) {
+            // Simplified: Use normal equip method for all hats (including those with overlays)
             equipHat(player, item);
-            String message = getPrefix() + configManager.getMessagesConfig().getString("equipped-message")
-                    .replace("{item}", getItemName(item));
-            player.sendMessage(ChatUtils.format(message));
         } else if (ItemManager.isBackbling(item, configManager)) {
             // Instead of equipping to chestplate, use the cosmetic inventory
             plugin.getCosmeticInventoryManager().setBackbling(player, item.clone());
@@ -162,7 +162,7 @@ public class EventListener implements Listener {
         if (cursorItem != null && !cursorItem.getType().isAir()) {
             String itemId = ItemManager.getItemId(cursorItem);
             if (itemId != null) {
-                // Only handle hat slots now, since backbling and balloon use cosmetic inventory
+                // Check hat slot
                 if (ItemManager.isHat(cursorItem, configManager) && event.getRawSlot() == 39) {
                     // Check permission before allowing equip
                     if (!ItemManager.hasPermission(player, itemId, configManager)) {
@@ -170,29 +170,45 @@ public class EventListener implements Listener {
                         String message = getPrefix() + configManager.getMessagesConfig().getString("no-permission-item")
                                 .replace("{item_id}", itemId);
                         player.sendMessage(ChatUtils.format(message));
-                        return;
                     }
+                    // We don't need to handle overlay hats specially here since direct inventory equipping works fine
                 }
             }
-        }
-
-        // Handle current slot item (item being taken)
-        ItemStack currentItem = event.getCurrentItem();
-        if (currentItem != null && !currentItem.getType().isAir()) {
-            // We don't need to handle backbling or balloon removal here anymore
-            // as they're not in armor slots
         }
     }
 
     private void equipHat(Player player, ItemStack item) {
-        // Store current helmet if exists
-        if (player.getInventory().getHelmet() != null) {
-            player.getInventory().addItem(player.getInventory().getHelmet());
+        // Get the currently worn helmet
+        ItemStack currentHelmet = player.getInventory().getHelmet();
+
+        // Get the slot where the new hat is located
+        int hatSlot = -1;
+        ItemStack[] contents = player.getInventory().getContents();
+        for (int i = 0; i < contents.length; i++) {
+            if (contents[i] != null && contents[i].equals(item)) {
+                hatSlot = i;
+                break;
+            }
         }
 
-        // Set the new hat and remove the item from inventory
+        // Set the new hat and remove from inventory
         player.getInventory().setHelmet(item.clone());
         player.getInventory().removeItem(item);
+
+        // If player was already wearing a hat, and we found the slot of the new hat
+        if (currentHelmet != null && hatSlot != -1) {
+            // Put the old hat in the slot where the new hat was
+            player.getInventory().setItem(hatSlot, currentHelmet);
+        } else if (currentHelmet != null) {
+            // If we couldn't find the slot, or it was somehow invalid,
+            // try to add it to inventory normally
+            player.getInventory().addItem(currentHelmet);
+        }
+
+        // Send equipped message
+        String message = getPrefix() + configManager.getMessagesConfig().getString("equipped-message")
+                .replace("{item}", getItemName(item));
+        player.sendMessage(ChatUtils.format(message));
     }
 
     @EventHandler
