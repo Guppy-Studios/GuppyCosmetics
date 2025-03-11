@@ -5,6 +5,7 @@ com\tenshiku\guppycosmetics\CommandHandler$1.class
 com\tenshiku\guppycosmetics\EventListener.class
 com\tenshiku\guppycosmetics\CosmeticType.class
 com\tenshiku\guppycosmetics\ChatUtils.class
+com\tenshiku\guppycosmetics\BalloonLeadProtector.class
 com\tenshiku\guppycosmetics\CosmeticInventoryManager.class
 com\tenshiku\guppycosmetics\ItemManager.class
 com\tenshiku\guppycosmetics\BackblingManager.class

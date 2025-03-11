@@ -75,14 +75,23 @@ public class BalloonManager {
         }, 100L, 100L); // Run every 5 seconds (100 ticks)
     }
 
+    /**
+     * Enhanced cleanup method to make sure all lead-related entities are removed
+     */
     private void cleanupOldLeads(World world, Location location) {
         world.getNearbyEntities(location, 10, 10, 10).stream()
                 .filter(entity -> {
+                    // Remove lead items
                     if (entity instanceof org.bukkit.entity.Item) {
                         return ((org.bukkit.entity.Item) entity).getItemStack().getType() == org.bukkit.Material.LEAD;
                     }
-                    // Also remove any hanging leads
-                    return entity instanceof org.bukkit.entity.LeashHitch;
+
+                    // Remove any hanging leads
+                    if (entity instanceof org.bukkit.entity.LeashHitch) {
+                        return true;
+                    }
+
+                    return false;
                 })
                 .forEach(Entity::remove);
     }
@@ -118,6 +127,9 @@ public class BalloonManager {
         });
     }
 
+    /**
+     * Enhanced createLeadAnchor method with additional protections against interaction
+     */
     private void createLeadAnchor(Player player, ArmorStand balloon) {
         if (!balloon.isValid()) return;
 
@@ -133,7 +145,7 @@ public class BalloonManager {
         // Calculate offset position for lead anchor starting at player location
         Location anchorLoc = balloon.getLocation().clone().add(0, 0.5, 0);
 
-        // Create new lead anchor
+        // Create new lead anchor with enhanced properties to prevent interaction
         Chicken leadAnchor = player.getWorld().spawn(anchorLoc, Chicken.class, chicken -> {
             chicken.setInvulnerable(true);
             chicken.setInvisible(true);
@@ -142,8 +154,19 @@ public class BalloonManager {
             chicken.setAgeLock(true);
             chicken.setAware(false);
             chicken.setCollidable(false);
+            chicken.setAI(false);  // Disable AI completely
+            chicken.setCanPickupItems(false);  // Prevent item pickup
             chicken.setCustomName("BalloonAnchor:" + player.getUniqueId());
             chicken.setCustomNameVisible(false);
+
+            // Set persistence to avoid despawning
+            chicken.setPersistent(true);
+
+            // Apply metadata for interaction handling
+            chicken.setMetadata("guppycosmetics_balloon_anchor",
+                    new FixedMetadataValue(plugin, player.getUniqueId().toString()));
+
+            // Finally, set leash holder
             chicken.setLeashHolder(player);
         });
 
@@ -180,6 +203,9 @@ public class BalloonManager {
             stand.setCustomNameVisible(false);
             stand.getEquipment().setHelmet(balloonItem);
             stand.setMetadata("itemId", new FixedMetadataValue(plugin, itemId));
+            // Add metadata to identify it as a cosmetic entity
+            stand.setMetadata("guppycosmetics_balloon",
+                    new FixedMetadataValue(plugin, player.getUniqueId().toString()));
         });
 
         // Create lead anchor with delay to ensure proper sequencing
@@ -218,7 +244,7 @@ public class BalloonManager {
                 return;
             }
 
-            // Validate item in cosmetic inventory instead of leggings slot
+            // Validate item in cosmetic inventory
             ItemStack cosmeticBalloon = ((GuppyCosmetics)plugin).getCosmeticInventoryManager().getBalloon(player);
             if (cosmeticBalloon == null || !ItemManager.isBalloon(cosmeticBalloon, configManager)) {
                 removeBalloon(uuid);
@@ -250,13 +276,31 @@ public class BalloonManager {
                 }
             }
 
+            // CRITICAL FIX: Safely check if the lead is still attached
+            boolean isLeashed = false;
+            Entity leashHolder = null;
+
+            try {
+                // This is the part that's causing the exception - wrap it in a try-catch
+                if (leadAnchor.isLeashed()) {
+                    isLeashed = true;
+                    leashHolder = leadAnchor.getLeashHolder();
+                }
+            } catch (IllegalStateException e) {
+                // Lead has been broken - recreate the balloon
+                plugin.getLogger().info("Leash broken for " + player.getName() + "'s balloon - recreating");
+                isLeashed = false;
+            }
+
             // Check for invalid leadholder relationship
-            if (leadAnchor.getLeashHolder() == null || !leadAnchor.getLeashHolder().equals(player)) {
-                // Fix the leash holder if possible
+            if (!isLeashed || leashHolder == null || !leashHolder.equals(player)) {
+                // Try to fix the leash holder if possible
                 try {
                     leadAnchor.setLeashHolder(player);
+                    plugin.getLogger().info("Reattached leash for " + player.getName() + "'s balloon");
                 } catch (Exception e) {
                     // If we can't fix it, recreate the balloon completely
+                    plugin.getLogger().info("Could not reattach leash for " + player.getName() + "'s balloon - recreating");
                     removeBalloon(uuid);
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         if (player.isOnline()) {
@@ -270,6 +314,7 @@ public class BalloonManager {
                 }
             }
 
+            // Continue with the rest of the balloon update logic
             // Calculate player movement
             double movement = lastLoc != null ? currentLoc.distance(lastLoc) : 0;
             double currentIdleTime = idleTime.getOrDefault(uuid, 0.0);

@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -46,6 +47,42 @@ public class EventListener implements Listener {
             return PlainTextComponentSerializer.plainText().serialize(item.getItemMeta().displayName());
         }
         return "Unknown Item";
+    }
+
+    /**
+     * Prevent players from interacting with balloon entities
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event) {
+        Entity entity = event.getRightClicked();
+
+        // Check if the entity is a balloon armorstand
+        if (entity instanceof ArmorStand && entity.getCustomName() != null &&
+                entity.getCustomName().startsWith("Balloon:")) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // Check if the entity is a balloon anchor chicken
+        if (entity instanceof Chicken && entity.getCustomName() != null &&
+                entity.getCustomName().startsWith("BalloonAnchor:")) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // Also prevent interaction with lead hitches (if any)
+        if (entity instanceof org.bukkit.entity.LeashHitch) {
+            // Get nearby entities to see if this might be connected to a balloon
+            for (Entity nearby : entity.getNearbyEntities(5, 5, 5)) {
+                if ((nearby instanceof Chicken && nearby.getCustomName() != null &&
+                        nearby.getCustomName().startsWith("BalloonAnchor:")) ||
+                        (nearby instanceof ArmorStand && nearby.getCustomName() != null &&
+                                nearby.getCustomName().startsWith("Balloon:"))) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+        }
     }
 
     @EventHandler

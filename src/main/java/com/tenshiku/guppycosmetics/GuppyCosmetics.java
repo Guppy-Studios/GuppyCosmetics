@@ -16,6 +16,7 @@ public class GuppyCosmetics extends JavaPlugin {
     private BackblingManager backblingManager;
     private BalloonManager balloonManager;
     private CosmeticInventoryManager cosmeticInventoryManager;
+    private BalloonLeadProtector balloonLeadProtector; // Add this line
 
     @Override
     public void onEnable() {
@@ -48,6 +49,10 @@ public class GuppyCosmetics extends JavaPlugin {
         // Initialize managers
         backblingManager = new BackblingManager(this, configManager);
         balloonManager = new BalloonManager(this, configManager);
+
+        // Initialize and register the balloon lead protector
+        balloonLeadProtector = new BalloonLeadProtector(this);
+        getServer().getPluginManager().registerEvents(balloonLeadProtector, this);
 
         // Pass all managers to EventListener
         eventListener = new EventListener(this, configManager, backblingManager, balloonManager);
