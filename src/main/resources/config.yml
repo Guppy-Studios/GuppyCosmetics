@@ -1,0 +1,13 @@
+# GuppyCosmetics Configuration
+# General plugin settings
+settings:
+  # Whether to hide backblings while players are gliding with elytra
+  hide_backblings_while_gliding: true
+
+  # Whether to show messages when backblings are hidden/restored due to gliding
+  show_gliding_messages: false
+
+# Settings for automatic saving of player cosmetics
+data:
+  # How often to autosave player cosmetic data (in minutes)
+  autosave_interval: 10

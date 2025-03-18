@@ -2,6 +2,8 @@ package com.tenshiku.guppycosmetics;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,7 +13,12 @@ import java.util.logging.Level;
 
 public class ConfigManager {
     private final GuppyCosmetics plugin;
-    private File hatsFile, backblingFile, balloonsFile, messagesFile;
+    private File hatsFile;
+    private File backblingFile;
+    private File balloonsFile;
+    private File messagesFile;
+    private File configFile;
+    private @NotNull YamlConfiguration mainConfig;
     private FileConfiguration hatsConfig, backblingConfig, balloonsConfig, messagesConfig;
 
     public ConfigManager(GuppyCosmetics plugin) {
@@ -19,6 +26,11 @@ public class ConfigManager {
     }
 
     public void loadAllConfigs() {
+        // Create plugin folder if it doesn't exist
+        if (!plugin.getDataFolder().exists()) {
+            plugin.getDataFolder().mkdirs();
+        }
+
         // Create cosmetics directory if it doesn't exist
         File cosmeticsDir = new File(plugin.getDataFolder(), "cosmetics");
         if (!cosmeticsDir.exists()) {
@@ -26,22 +38,29 @@ public class ConfigManager {
         }
 
         // Initialize file objects
+        configFile = new File(plugin.getDataFolder(), "config.yml");
         hatsFile = new File(cosmeticsDir, "hats.yml");
         backblingFile = new File(cosmeticsDir, "backbling.yml");
         balloonsFile = new File(cosmeticsDir, "balloons.yml");
         messagesFile = new File(plugin.getDataFolder(), "messages.yml");
 
         // Save default configurations if they don't exist
+        if (!configFile.exists()) saveResource("config.yml", false);
         if (!hatsFile.exists()) saveResource("cosmetics/hats.yml", false);
         if (!backblingFile.exists()) saveResource("cosmetics/backbling.yml", false);
         if (!balloonsFile.exists()) saveResource("cosmetics/balloons.yml", false);
         if (!messagesFile.exists()) saveResource("messages.yml", false);
 
         // Load configurations
+        mainConfig = YamlConfiguration.loadConfiguration(configFile);
         hatsConfig = YamlConfiguration.loadConfiguration(hatsFile);
         backblingConfig = YamlConfiguration.loadConfiguration(backblingFile);
         balloonsConfig = YamlConfiguration.loadConfiguration(balloonsFile);
         messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
+    }
+
+    public boolean shouldHideBackblingsWhileGliding() {
+        return mainConfig.getBoolean("settings.hide_backblings_while_gliding", true);
     }
 
     private void saveResource(String resourcePath, boolean replace) {
@@ -77,6 +96,10 @@ public class ConfigManager {
         } catch (IOException ex) {
             plugin.getLogger().log(Level.SEVERE, "Could not save " + outFile.getName() + " to " + outFile, ex);
         }
+    }
+
+    public FileConfiguration getMainConfig(){
+        return mainConfig;
     }
 
     public FileConfiguration getHatsConfig() {

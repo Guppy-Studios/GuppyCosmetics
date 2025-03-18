@@ -1,7 +1,6 @@
 package com.tenshiku.guppycosmetics;
 
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ArmorStand;
@@ -13,7 +12,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -21,7 +19,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.block.Action;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.event.entity.EntityToggleGlideEvent;
 
 import java.util.UUID;
 
@@ -276,6 +274,55 @@ public class EventListener implements Listener {
             backblingManager.checkAndRestoreBackbling(player);
             balloonManager.checkAndRestoreBalloon(player);
         }, 5L); // Keep a small delay for stability
+    }
+
+    /**
+     * Handles the toggling of gliding state to hide/show backblings
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onPlayerGlide(EntityToggleGlideEvent event) {
+        // Check if the feature is enabled in config
+        if (!configManager.shouldHideBackblingsWhileGliding()) {
+            return;
+        }
+
+        // Check if the entity is a player
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
+
+        Player player = (Player) event.getEntity();
+        UUID playerUuid = player.getUniqueId();
+
+        // Check if the player is starting or stopping gliding
+        if (event.isGliding()) {
+            // Player is starting to glide - hide backbling
+            if (backblingManager.hasBackbling(playerUuid)) {
+                // Store the current backbling data before removing it
+                // We'll need to retrieve the same item when restoring
+                ItemStack backblingItem = plugin.getCosmeticInventoryManager().getBackbling(player);
+                if (backblingItem != null) {
+                    // Store the item reference for this player in a map for later restoration
+                    backblingManager.storeBackblingForGliding(playerUuid, backblingItem.clone());
+                    // Remove the visual backbling
+                    backblingManager.removeBackbling(playerUuid);
+
+                    // Send message to player if configured to do so
+                    if (configManager.getMessagesConfig().getBoolean("show_gliding_messages", false)) {
+                        player.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("backbling_removed_gliding", "<gray>Your backbling has been temporarily removed while gliding.")));
+                    }
+                }
+            }
+        } else {
+            // Player has stopped gliding - restore backbling if it was hidden due to gliding
+            backblingManager.restoreBackblingAfterGliding(playerUuid);
+
+            // Send message to player if configured to do so
+            if (configManager.getMessagesConfig().getBoolean("show_gliding_messages", false) &&
+                    backblingManager.hasBackbling(playerUuid)) {
+                player.sendMessage(ChatUtils.format(getPrefix() + configManager.getMessagesConfig().getString("backbling_restored_gliding", "<gray>Your backbling has been restored.")));
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

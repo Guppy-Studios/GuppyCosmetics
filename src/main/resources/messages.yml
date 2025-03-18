@@ -16,6 +16,8 @@ player-only: "<red>This command can only be used by players."
 spawn-usage: "<red>Usage: /guppycosmetics spawn <item-id>"
 give-usage: "<red>Usage: /guppycosmetics give <player> <item-id>"
 target-no-permission: "<red>Target player doesn't have permission to use this cosmetic."
+backbling_removed_gliding: "<gray>Your backbling has been temporarily hidden while gliding."
+backbling_restored_gliding: "<gray>Your backbling has been restored after gliding."
 
 # Help messages
 commands-title: "<#6e7594>GuppyCosmetics Commands:"
